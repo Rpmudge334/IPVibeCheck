@@ -287,20 +287,37 @@
                 e.preventDefault();
                 try {
                     const [ip, mask] = input.split('/');
-                    if (!mask) throw new Error("Format: 192.168.1.1/24");
-                    
-                    const ipParts = ip.split('.').map(Number);
-                    const maskBits = parseInt(mask);
-                    const hosts = Math.pow(2, 32 - maskBits) - 2;
-                    
+                    const octets = ip.split('.').map(Number);
+                    const maskBits = parseInt(mask, 10);
+
+                    if (octets.length !== 4 || octets.some(o => Number.isNaN(o) || o < 0 || o > 255)) {
+                        throw new Error("IP must have four octets between 0-255");
+                    }
+                    if (Number.isNaN(maskBits) || maskBits < 0 || maskBits > 32) {
+                        throw new Error("Mask must be between 0 and 32");
+                    }
+
+                    const ipInt = octets.reduce((acc, oct) => (acc << 8) + oct, 0) >>> 0;
+                    const maskInt = maskBits === 0 ? 0 : (~0 << (32 - maskBits)) >>> 0;
+                    const networkInt = ipInt & maskInt;
+                    const broadcastInt = networkInt | (~maskInt >>> 0);
+
+                    const toDotted = (num) => [24, 16, 8, 0].map(shift => (num >>> shift) & 255).join('.');
+
+                    const usableHosts = maskBits >= 31 ? 0 : Math.pow(2, 32 - maskBits) - 2;
+                    const firstHost = maskBits >= 31 ? 'N/A' : toDotted(networkInt + 1);
+                    const lastHost = maskBits >= 31 ? 'N/A' : toDotted(broadcastInt - 1);
+
+                    const maskDotted = toDotted(maskInt);
+
                     setResult({
-                        network: `${ipParts[0]}.${ipParts[1]}.${ipParts[2]}.0`,
-                        broadcast: `${ipParts[0]}.${ipParts[1]}.${ipParts[2]}.255`,
-                        mask: '255.255.255.0', // simplified
-                        hosts: hosts > 0 ? hosts : 0,
-                        range: `${ipParts[0]}.${ipParts[1]}.${ipParts[2]}.1 - ${ipParts[0]}.${ipParts[1]}.${ipParts[2]}.254`
+                        network: toDotted(networkInt),
+                        broadcast: toDotted(broadcastInt),
+                        mask: maskDotted,
+                        hosts: usableHosts,
+                        range: maskBits === 32 ? 'Single host' : `${firstHost} - ${lastHost}`
                     });
-                } catch (err) { alert("Invalid CIDR format"); }
+                } catch (err) { alert(err.message || "Invalid CIDR format"); }
             };
 
             return (
