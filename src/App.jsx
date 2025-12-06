@@ -6,9 +6,6 @@ import LogAnalyzer from './components/LogAnalyzer';
 import DNSSupertool from './components/DNSSupertool';
 import SubnetCalc from './components/SubnetCalc';
 import MacLookup from './components/MacLookup';
-import PasswordGen from './components/PasswordGen';
-import DomainAge from './components/DomainAge';
-import EmailVisualizer from './components/EmailVisualizer';
 import ConsentModal from './components/shared/ConsentModal';
 import Toast from './components/shared/Toast';
 
@@ -117,9 +114,6 @@ function App() {
                 {activeTab === 'dns' && <DNSSupertool {...globalProps} />}
                 {activeTab === 'subnet' && <SubnetCalc {...globalProps} />}
                 {activeTab === 'mac' && <MacLookup {...globalProps} />}
-                {activeTab === 'pass' && <PasswordGen {...globalProps} />}
-                {activeTab === 'whois' && <DomainAge {...globalProps} />}
-                {activeTab === 'email' && <EmailVisualizer {...globalProps} />}
             </div>
 
             {/* Footer */}

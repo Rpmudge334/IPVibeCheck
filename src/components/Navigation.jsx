@@ -1,5 +1,5 @@
 import React from 'react';
-import { Terminal, FileText, Globe, Network, Cpu, KeyRound, Calendar, Mail } from 'lucide-react';
+import { Terminal, FileText, Globe, Network, Cpu } from 'lucide-react';
 
 const Navigation = ({ activeTab, setActiveTab }) => {
     const tabs = [
@@ -8,9 +8,6 @@ const Navigation = ({ activeTab, setActiveTab }) => {
         { id: 'dns', label: 'DNS', icon: <Globe className="w-4 h-4" /> },
         { id: 'subnet', label: 'Subnet', icon: <Network className="w-4 h-4" /> },
         { id: 'mac', label: 'MAC', icon: <Cpu className="w-4 h-4" /> },
-        { id: 'pass', label: 'Pass', icon: <KeyRound className="w-4 h-4" /> },
-        { id: 'whois', label: 'Whois', icon: <Calendar className="w-4 h-4" /> },
-        { id: 'email', label: 'Email', icon: <Mail className="w-4 h-4" /> },
     ];
 
     return (
