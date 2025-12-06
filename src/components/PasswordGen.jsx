@@ -1,30 +1,62 @@
-import React, { useState } from 'react';
-import { KeyRound, RefreshCw, Copy, CheckCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { KeyRound, RefreshCw, Copy, CheckCircle, Settings2, HelpCircle } from 'lucide-react';
 import { WORD_LIST } from '../utils/wordlist';
 import { copyToClipboard } from '../utils/helpers';
 
 const PasswordGen = ({ toast }) => {
     const [password, setPassword] = useState('');
     const [copied, setCopied] = useState(false);
+    const [format, setFormat] = useState('W w w w!');
+    const [showOptions, setShowOptions] = useState(false);
+    const [words, setWords] = useState([]);
+
+    useEffect(() => {
+        try {
+            // Decode hidden wordlist at runtime
+            const decoded = atob(WORD_LIST);
+            setWords(JSON.parse(decoded));
+        } catch (e) {
+            console.error("Integrity check failed on dictionary.");
+            setWords(["error", "dict", "fail", "check"]);
+        }
+    }, []);
+
+    const getRandomWord = () => {
+        if (words.length === 0) return "load";
+        return words[Math.floor(Math.random() * words.length)];
+    };
 
     const generate = (e) => {
         if (e) e.preventDefault();
 
-        let words = [];
-        for (let i = 0; i < 4; i++) {
-            const randomIndex = Math.floor(Math.random() * WORD_LIST.length);
-            words.push(WORD_LIST[randomIndex]);
+        let newPass = '';
+        const specials = ['!', '@', '#', '$', '%', '&', '*'];
+
+        // Token Parser:
+        // W = Capitalized Word
+        // w = Lowercase Word
+        // # = Random Digit
+        // ! = Random Special
+        // Any other char is literals
+
+        for (let i = 0; i < format.length; i++) {
+            const char = format[i];
+
+            if (char === 'W') {
+                const w = getRandomWord();
+                newPass += w.charAt(0).toUpperCase() + w.slice(1);
+            } else if (char === 'w') {
+                newPass += getRandomWord();
+            } else if (char === '#') {
+                newPass += Math.floor(Math.random() * 10);
+            } else if (char === '!') {
+                newPass += specials[Math.floor(Math.random() * specials.length)];
+            } else {
+                newPass += char;
+            }
         }
 
-        // Capitalize first letter of first word
-        words[0] = words[0].charAt(0).toUpperCase() + words[0].slice(1);
-
-        // Special characters
-        const specials = ['!', '@', '#', '$', '%', '&', '*'];
-        const randomSpecial = specials[Math.floor(Math.random() * specials.length)];
-
-        const newPassword = `${words.join(' ')}${randomSpecial}`;
-        setPassword(newPassword);
+        setPassword(newPass);
         setCopied(false);
     };
 
@@ -47,18 +79,56 @@ const PasswordGen = ({ toast }) => {
                     </div>
 
                     <h2 className="text-xl font-bold text-white mb-2">Secure Passphrase Generator</h2>
-                    <p className="text-slate-400 text-sm mb-8">Standard Format: 4 words, capitalized start, special ending.</p>
+
+                    <button
+                        onClick={() => setShowOptions(!showOptions)}
+                        className="text-slate-400 text-xs mb-8 flex items-center justify-center gap-1 hover:text-emerald-400 transition-colors mx-auto"
+                    >
+                        <Settings2 className="w-3 h-3" />
+                        {showOptions ? "Hide Options" : "Customize Format"}
+                    </button>
+
+                    {showOptions && (
+                        <div className="mb-8 p-4 bg-slate-800/50 rounded-lg border border-slate-700 animate-in fade-in slide-in-from-top-2">
+                            <div className="flex flex-col items-center">
+                                <label className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Format String</label>
+                                <div className="flex items-center gap-2 w-full max-w-xs">
+                                    <input
+                                        type="text"
+                                        value={format}
+                                        onChange={(e) => setFormat(e.target.value)}
+                                        className="w-full bg-slate-950 border border-slate-600 rounded px-3 py-2 text-center font-mono text-emerald-400 focus:outline-none focus:border-emerald-500"
+                                        placeholder="W w w w!"
+                                    />
+                                    <div className="group relative">
+                                        <HelpCircle className="w-4 h-4 text-slate-500 cursor-help" />
+                                        <div className="hidden group-hover:block absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-48 p-2 bg-black border border-slate-700 rounded text-[10px] text-slate-300 z-20">
+                                            <b>Tokens:</b><br />
+                                            W = Capital Word<br />
+                                            w = Lower Word<br />
+                                            # = Digit (0-9)<br />
+                                            ! = Symbol<br />
+                                            Other chars stay (e.g. -)
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="mt-2 text-[10px] text-slate-500">
+                                    Def: <span className="font-mono text-slate-400">W w w w!</span> &rarr; "Horse battery staple correct@"
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     <div className="bg-black/50 rounded-xl p-6 mb-8 border border-slate-700 flex items-center justify-between gap-4">
                         <div className="text-2xl md:text-3xl font-mono text-white tracking-wider break-all text-left">
-                            {password || <span className="text-slate-600 opacity-50">Word word word word#</span>}
+                            {password || <span className="text-slate-600 opacity-50">Generating...</span>}
                         </div>
                         <button
                             onClick={handleCopy}
                             disabled={!password}
                             className={`p-3 rounded-lg transition-all ${copied
-                                    ? 'bg-green-500 text-white'
-                                    : 'bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700'
+                                ? 'bg-green-500 text-white'
+                                : 'bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700'
                                 }`}
                         >
                             {copied ? <CheckCircle className="w-6 h-6" /> : <Copy className="w-6 h-6" />}
