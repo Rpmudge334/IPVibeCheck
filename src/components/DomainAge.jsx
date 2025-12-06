@@ -19,6 +19,7 @@ const DomainAge = () => {
         let source = 'Unknown';
         let risk = 'Unknown';
         let soaDate = null;
+        let debugMsg = '';
 
         try {
             // Strategy 1: Try RDAP (Best Data)
@@ -35,9 +36,12 @@ const DomainAge = () => {
                             source = 'RDAP (Official)';
                         }
                     }
+                } else {
+                    debugMsg += `RDAP Status: ${rdapRes.status}; `;
                 }
             } catch (rdapErr) {
-                console.warn("RDAP lookup failed, falling back to heuristic", rdapErr);
+                console.warn("RDAP lookup failed", rdapErr);
+                debugMsg += `RDAP Error: ${rdapErr.message}; `;
             }
 
             // Strategy 2: Google DNS SOA Serial Heuristic (Fallback)
@@ -60,7 +64,11 @@ const DomainAge = () => {
                             source = 'SOA Serial (Heuristic)';
                             creationDate = soaDate.toISOString().split('T')[0];
                         }
+                    } else {
+                        debugMsg += `SOA Serial format mismatch: ${serial}; `;
                     }
+                } else {
+                    debugMsg += 'No SOA record found; ';
                 }
             }
 
@@ -80,7 +88,7 @@ const DomainAge = () => {
 
             setResult({
                 domain,
-                source,
+                source: source === 'Unknown' && debugMsg ? `Unknown (${debugMsg})` : source,
                 creationDate: creationDate || 'Unknown',
                 ageDays: ageDays,
                 risk
@@ -88,8 +96,6 @@ const DomainAge = () => {
 
         } catch (err) {
             setError(err.message || "Lookup failed");
-            // If we have partial result, show it?
-            // For now, simple error.
         } finally {
             setLoading(false);
         }
