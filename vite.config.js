@@ -4,8 +4,16 @@ import { viteSingleFile } from "vite-plugin-singlefile"
 
 // https://vitejs.dev/config/
 export default defineConfig({
-    base: "./",
-    plugins: [react(), viteSingleFile()],
+    plugins: [
+        react(),
+        viteSingleFile(),
+        {
+            name: 'html-transform',
+            transformIndexHtml(html) {
+                return html.replace(/type="module"/g, '').replace(/crossorigin/g, '');
+            }
+        }
+    ],
     build: {
         target: "es2015",
         assetsInlineLimit: 100000000,
