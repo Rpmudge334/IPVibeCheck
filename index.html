@@ -926,7 +926,7 @@
             };
 
             const tabs = [
-                { id: 'single', label: 'Single', icon: <Terminal className="w-4 h-4" /> },
+                { id: 'single', label: 'Target', icon: <Terminal className="w-4 h-4" /> },
                 { id: 'logs', label: 'Logs', icon: <FileText className="w-4 h-4" /> },
                 { id: 'dns', label: 'DNS', icon: <Globe className="w-4 h-4" /> },
                 { id: 'subnet', label: 'Subnet', icon: <Network className="w-4 h-4" /> },
@@ -964,6 +964,9 @@
 
                     {/* Navigation */}
                     <div className="bg-slate-900 p-1 rounded-xl border border-slate-700 flex flex-wrap justify-center gap-1 mb-8">
+                        <div className="hidden md:flex items-center gap-3 px-4 border-r border-slate-700 mr-2">
+                            <span className="text-[10px] font-bold text-slate-500 tracking-widest">MODULES</span>
+                        </div>
                         {tabs.map(tab => (
                             <button
                                 key={tab.id}
