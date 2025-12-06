@@ -1,40 +1,90 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>IP Vibe Check // MSP God Mode</title>
-    
+
     <!-- CSS for Loading/Error States -->
     <style>
-        body { margin: 0; background-color: #0f172a; color: #e2e8f0; font-family: monospace; }
-        #loading-msg { padding: 40px; text-align: center; }
-        .hidden { display: none; }
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #0f172a; }
-        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        body {
+            margin: 0;
+            background-color: #0f172a;
+            color: #e2e8f0;
+            font-family: monospace;
+        }
+
+        #loading-msg {
+            padding: 40px;
+            text-align: center;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
     </style>
 
     <!-- Tailwind -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
+
     <!-- React & ReactDOM -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    
+
     <!-- Babel -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    
+
     <style>
         @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
-        body { font-family: 'JetBrains Mono', monospace; }
-        .glass-panel { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
-        .tab-active { background: #2563eb; color: white; border-color: #3b82f6; }
-        .tab-inactive { background: rgba(30, 41, 59, 0.5); color: #94a3b8; border-color: transparent; }
-        .drop-zone { border: 2px dashed #334155; transition: all 0.2s; }
-        .drop-zone.active { border-color: #3b82f6; background: rgba(59, 130, 246, 0.1); }
+
+        body {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .tab-active {
+            background: #2563eb;
+            color: white;
+            border-color: #3b82f6;
+        }
+
+        .tab-inactive {
+            background: rgba(30, 41, 59, 0.5);
+            color: #94a3b8;
+            border-color: transparent;
+        }
+
+        .drop-zone {
+            border: 2px dashed #334155;
+            transition: all 0.2s;
+        }
+
+        .drop-zone.active {
+            border-color: #3b82f6;
+            background: rgba(59, 130, 246, 0.1);
+        }
     </style>
 </head>
+
 <body>
 
     <div id="root">
@@ -49,38 +99,130 @@
 
         // --- Icons ---
         const Icon = ({ children, className, ...props }) => (<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>{children}</svg>);
-        const ShieldAlert = (p) => <Icon {...p}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/><path d="M12 8v4"/><path d="M12 16h.01"/></Icon>;
-        const Globe = (p) => <Icon {...p}><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></Icon>;
-        const MapPin = (p) => <Icon {...p}><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></Icon>;
-        const Server = (p) => <Icon {...p}><rect width="20" height="8" x="2" y="2" rx="2" ry="2"/><rect width="20" height="8" x="2" y="14" rx="2" ry="2"/><line x1="6" x2="6.01" y1="6" y2="6"/><line x1="6" x2="6.01" y1="18" y2="18"/></Icon>;
-        const ExternalLink = (p) => <Icon {...p}><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" x2="21" y1="14" y2="3"/></Icon>;
-        const Copy = (p) => <Icon {...p}><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></Icon>;
-        const Terminal = (p) => <Icon {...p}><polyline points="4 17 10 11 4 5"/><line x1="12" x2="20" y1="19" y2="19"/></Icon>;
-        const Wifi = (p) => <Icon {...p}><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" x2="12.01" y1="20" y2="20"/></Icon>;
-        const AlertTriangle = (p) => <Icon {...p}><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></Icon>;
-        const UploadCloud = (p) => <Icon {...p}><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M12 12v9"/><path d="m16 16-4-4-4 4"/></Icon>;
-        const AlertOctagon = (p) => <Icon {...p}><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></Icon>;
-        const RefreshCw = (p) => <Icon {...p}><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></Icon>;
-        const Trash2 = (p) => <Icon {...p}><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></Icon>;
-        const FileText = (p) => <Icon {...p}><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></Icon>;
-        const ClipboardCheck = (p) => <Icon {...p}><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="m9 14 2 2 4-4"/></Icon>;
-        const History = (p) => <Icon {...p}><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 16"/><path d="M3 5v11h11"/><path d="M12 7v5l4 2"/></Icon>;
-        const Network = (p) => <Icon {...p}><rect x="16" y="16" width="6" height="6" rx="1"/><rect x="2" y="16" width="6" height="6" rx="1"/><rect x="9" y="2" width="6" height="6" rx="1"/><path d="M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3"/><path d="M12 12V8"/></Icon>;
-        const Cpu = (p) => <Icon {...p}><rect width="16" height="16" x="4" y="4" rx="2"/><rect width="6" height="6" x="9" y="9" rx="1"/><path d="M15 2v2"/><path d="M15 20v2"/><path d="M2 15h2"/><path d="M2 9h2"/><path d="M20 15h2"/><path d="M20 9h2"/><path d="M9 2v2"/><path d="M9 20v2"/></Icon>;
-        const List = (p) => <Icon {...p}><line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/></Icon>;
+        const ShieldAlert = (p) => <Icon {...p}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10" /><path d="M12 8v4" /><path d="M12 16h.01" /></Icon>;
+        const Globe = (p) => <Icon {...p}><circle cx="12" cy="12" r="10" /><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" /><path d="M2 12h20" /></Icon>;
+        const MapPin = (p) => <Icon {...p}><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" /><circle cx="12" cy="10" r="3" /></Icon>;
+        const Server = (p) => <Icon {...p}><rect width="20" height="8" x="2" y="2" rx="2" ry="2" /><rect width="20" height="8" x="2" y="14" rx="2" ry="2" /><line x1="6" x2="6.01" y1="6" y2="6" /><line x1="6" x2="6.01" y1="18" y2="18" /></Icon>;
+        const ExternalLink = (p) => <Icon {...p}><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" x2="21" y1="14" y2="3" /></Icon>;
+        const Copy = (p) => <Icon {...p}><rect width="14" height="14" x="8" y="8" rx="2" ry="2" /><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" /></Icon>;
+        const Terminal = (p) => <Icon {...p}><polyline points="4 17 10 11 4 5" /><line x1="12" x2="20" y1="19" y2="19" /></Icon>;
+        const Wifi = (p) => <Icon {...p}><path d="M5 12.55a11 11 0 0 1 14.08 0" /><path d="M1.42 9a16 16 0 0 1 21.16 0" /><path d="M8.53 16.11a6 6 0 0 1 6.95 0" /><line x1="12" x2="12.01" y1="20" y2="20" /></Icon>;
+        const AlertTriangle = (p) => <Icon {...p}><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" /><path d="M12 9v4" /><path d="M12 17h.01" /></Icon>;
+        const UploadCloud = (p) => <Icon {...p}><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242" /><path d="M12 12v9" /><path d="m16 16-4-4-4 4" /></Icon>;
+        const AlertOctagon = (p) => <Icon {...p}><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2" /><line x1="12" x2="12" y1="8" y2="12" /><line x1="12" x2="12.01" y1="16" y2="16" /></Icon>;
+        const RefreshCw = (p) => <Icon {...p}><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" /><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" /><path d="M8 16H3v5" /></Icon>;
+        const Trash2 = (p) => <Icon {...p}><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /></Icon>;
+        const FileText = (p) => <Icon {...p}><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" /><polyline points="14 2 14 8 20 8" /></Icon>;
+        const ClipboardCheck = (p) => <Icon {...p}><rect width="8" height="4" x="8" y="2" rx="1" ry="1" /><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" /><path d="m9 14 2 2 4-4" /></Icon>;
+        const History = (p) => <Icon {...p}><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 16" /><path d="M3 5v11h11" /><path d="M12 7v5l4 2" /></Icon>;
+        const Network = (p) => <Icon {...p}><rect x="16" y="16" width="6" height="6" rx="1" /><rect x="2" y="16" width="6" height="6" rx="1" /><rect x="9" y="2" width="6" height="6" rx="1" /><path d="M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3" /><path d="M12 12V8" /></Icon>;
+        const Cpu = (p) => <Icon {...p}><rect width="16" height="16" x="4" y="4" rx="2" /><rect width="6" height="6" x="9" y="9" rx="1" /><path d="M15 2v2" /><path d="M15 20v2" /><path d="M2 15h2" /><path d="M2 9h2" /><path d="M20 15h2" /><path d="M20 9h2" /><path d="M9 2v2" /><path d="M9 20v2" /></Icon>;
+        const List = (p) => <Icon {...p}><line x1="8" x2="21" y1="6" y2="6" /><line x1="8" x2="21" y1="12" y2="12" /><line x1="8" x2="21" y1="18" y2="18" /><line x1="3" x2="3.01" y1="6" y2="6" /><line x1="3" x2="3.01" y1="12" y2="12" /><line x1="3" x2="3.01" y1="18" y2="18" /></Icon>;
 
         // --- Logic & Constants ---
         const IP_REGEX_GLOBAL = /(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/g;
         const PORT_REGEX = /(?:dst_port|dport|port)[:=]\s?(\d+)/i;
         const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-        const isIP = (str) => /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/.test(str);
+        const isIP = (str) => {
+            if (!/^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/.test(str)) return false;
+            return str.split('.').every(octet => {
+                const num = parseInt(octet, 10);
+                return num >= 0 && num <= 255;
+            });
+        };
         const isPrivateIP = (ip) => {
             const parts = ip.split('.').map(Number);
-            return (parts[0] === 10 || (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) || (parts[0] === 192 && parts[1] === 168) || parts[0] === 127);
+            if (parts[0] === 10) return true;
+            if (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) return true;
+            if (parts[0] === 192 && parts[1] === 168) return true;
+            if (parts[0] === 127) return true;
+            if (parts[0] === 169 && parts[1] === 254) return true;
+            if (parts[0] === 100 && (parts[1] >= 64 && parts[1] <= 127)) return true;
+            if (parts[0] >= 224) return true;
+            if (parts[0] === 0) return true;
+            return false;
         };
-        const copyToClipboard = (text) => navigator.clipboard.writeText(text);
+        const copyToClipboard = (text) => {
+            navigator.clipboard.writeText(text);
+            if (window.vibeToast) window.vibeToast("Copied to clipboard!");
+        };
 
         // --- Tab Components ---
+
+        // --- Web Worker Code ---
+        const WORKER_CODE = `
+            self.onmessage = function(e) {
+                const { text, isPrivateIPSource } = e.data;
+                try {
+                    const lines = text.replace(/\\r\\n/g, "\\n").replace(/\\r/g, "\\n").split('\\n');
+                    if (lines.length > 500000) throw new Error("Line limit exceeded (Max 500k lines)");
+                    
+                    const parsed = [];
+                    const IP_REGEX_GLOBAL = /(\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3})/g;
+                    const PORT_REGEX = /(?:dst_port|dport|port|service)[:=]\\s?(\\d+)/i;
+
+                    lines.forEach((line, index) => {
+                        if (!line.trim()) return;
+                        IP_REGEX_GLOBAL.lastIndex = 0;
+                        const ips = line.match(IP_REGEX_GLOBAL);
+                        const portMatch = line.match(PORT_REGEX);
+                        if (ips && ips.length >= 2) {
+                            parsed.push({ 
+                                id: index,
+                                src: ips[0], 
+                                dst: ips[1], 
+                                port: portMatch ? portMatch[1] : 'Unknown',
+                                raw: line.substring(0, 200) // Truncate to save memory
+                            });
+                        }
+                    });
+
+                    if (parsed.length === 0) {
+                        self.postMessage({ error: "No IP addresses found.", debugLines: lines.slice(0, 5) });
+                        return;
+                    }
+
+                    // Aggregation
+                    const attackers = {};
+                    // Re-implement isPrivateIP inside worker or pass flag. 
+                    // Simplest logic for now:
+                    const isPrivate = (ip) => {
+                        const p = ip.split('.').map(Number);
+                        if (p[0] === 10) return true;
+                        if (p[0] === 172 && p[1] >= 16 && p[1] <= 31) return true;
+                        if (p[0] === 192 && p[1] === 168) return true;
+                        if (p[0] === 127 || p[0] === 0 || p[0] >= 224) return true;
+                        // Approximate for minimal code overlap
+                        return false;
+                    };
+
+                    parsed.forEach(log => {
+                        if (isPrivate(log.src)) return; 
+                        if (!attackers[log.src]) attackers[log.src] = { ip: log.src, count: 0, ports: [], destinations: [], riskScore: 0, flags: [] };
+                        attackers[log.src].count++;
+                        if(!attackers[log.src].ports.includes(log.port)) attackers[log.src].ports.push(log.port);
+                        if(!attackers[log.src].destinations.includes(log.dst)) attackers[log.src].destinations.push(log.dst);
+                    });
+
+                    const analyze = Object.values(attackers).map(attacker => {
+                        let score = 0;
+                        if (attacker.count > 100) { score += 20; attacker.flags.push("High Vol"); }
+                        attacker.ports.forEach(p => {
+                            const port = parseInt(p);
+                            if ([3389, 5900].includes(port)) { score += 50; if(!attacker.flags.includes("RDP/VNC")) attacker.flags.push("RDP/VNC"); }
+                            else if ([445, 139].includes(port)) { score += 30; if(!attacker.flags.includes("SMB")) attacker.flags.push("SMB"); }
+                        });
+                        if (attacker.destinations.length > 5) { score += 40; attacker.flags.push("Horiz. Scan"); }
+                        attacker.riskScore = score;
+                        return attacker;
+                    }).sort((a, b) => b.riskScore - a.riskScore);
+
+                    self.postMessage({ success: true, logs: parsed, analyzedData: analyze });
+                } catch (err) {
+                    self.postMessage({ error: err.message });
+                }
+            };
+        `;
 
         const SingleTarget = () => {
             const [input, setInput] = useState('');
@@ -96,7 +238,7 @@
                 const handleKey = (e) => {
                     if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
                         e.preventDefault();
-                        if(inputRef.current) inputRef.current.focus();
+                        if (inputRef.current) inputRef.current.focus();
                     }
                 };
                 window.addEventListener('keydown', handleKey);
@@ -113,8 +255,8 @@
                 if (e) e.preventDefault();
                 if (!input) return;
                 setLoading(true); setError(null); setData(null);
-                
-                let targetIP = input.trim().replace(/[<>"']/g, ''); 
+
+                let targetIP = input.trim().replace(/[<>"']/g, '');
                 let dnsData = null;
 
                 try {
@@ -128,7 +270,7 @@
                         const safeTarget = encodeURIComponent(targetIP);
                         const dnsRes = await fetch(`https://dns.google/resolve?name=${safeTarget}&type=A`);
                         const dnsJson = await dnsRes.json();
-                        
+
                         if (dnsJson.Answer && dnsJson.Answer.length > 0) {
                             const aRecord = dnsJson.Answer.find(r => r.type === 1);
                             if (aRecord) {
@@ -141,7 +283,7 @@
                     const geoRes = await fetch(`https://ipwho.is/${targetIP}`);
                     const geoJson = await geoRes.json();
                     if (!geoJson.success) throw new Error(geoJson.message || "Fetch failed");
-                    
+
                     const result = { originalInput: input, ip: targetIP, isDomain: !isIP(input), dns: dnsData, ...geoJson };
                     setData(result);
                     updateHistory({ ip: targetIP, date: new Date().toLocaleTimeString() });
@@ -152,7 +294,6 @@
                 if (!data) return;
                 const text = `[Security Scan]\nTarget: ${data.ip} (${data.originalInput})\nISP: ${data.connection.isp} (${data.country_code})\nASN: AS${data.connection.asn}\nResolution: ${data.dns || 'Direct IP'}\nScanner: IP Vibe Check`;
                 copyToClipboard(text);
-                alert("Copied summary to clipboard!");
             };
 
             return (
@@ -182,7 +323,7 @@
                                         <div className="flex items-start justify-between mb-6">
                                             <div>
                                                 <div className="text-xs font-bold text-blue-400 mb-1 uppercase tracking-wider">Target Acquired</div>
-                                                <div className="text-3xl font-bold text-white font-mono flex items-center gap-3">{data.ip}<button onClick={() => copyToClipboard(data.ip)} className="p-2 hover:bg-slate-700 rounded-lg transition-colors group"><Copy className="w-4 h-4 text-slate-500 group-hover:text-white" /></button></div>
+                                                <div className="text-3xl font-bold text-white font-mono flex items-center gap-3">{data.ip}<button onClick={() => copyToClipboard(data.ip)} aria-label="Copy IP" className="p-2 hover:bg-slate-700 rounded-lg transition-colors group"><Copy className="w-4 h-4 text-slate-500 group-hover:text-white" /></button></div>
                                                 {data.isDomain && <div className="mt-2 text-slate-400 text-sm flex items-center gap-2"><span className="bg-slate-800 px-2 py-1 rounded text-xs border border-slate-700">Resolved from</span>{data.originalInput}</div>}
                                             </div>
                                             <img src={data.flag.img} alt={data.country} className="w-16 h-auto rounded shadow-lg" />
@@ -226,7 +367,7 @@
                 e.preventDefault();
                 if (!input) return;
                 setLoading(true); setResults({});
-                
+
                 const domain = input.trim().replace(/(^\w+:|^)\/\//, '');
                 const newResults = {};
 
@@ -355,7 +496,7 @@
                 try {
                     const res = await fetch(`https://api.maclookup.app/v2/macs/${input}`);
                     const json = await res.json();
-                    if(json.success && json.found) setVendor(json.company);
+                    if (json.success && json.found) setVendor(json.company);
                     else setVendor("Unknown / Not Found");
                 } catch (err) { setVendor("Error fetching data"); }
                 setLoading(false);
@@ -389,52 +530,77 @@
             const [analyzedData, setAnalyzedData] = useState(null);
             const [enrichmentData, setEnrichmentData] = useState({});
             const [enriching, setEnriching] = useState(false);
+            const [parsing, setParsing] = useState(false);
             const [error, setError] = useState(null);
             const [debugLines, setDebugLines] = useState(null);
             const fileInputRef = useRef(null);
 
-            const resetAnalysis = () => { setLogs([]); setAnalyzedData(null); setEnrichmentData({}); setError(null); setDebugLines(null); if (fileInputRef.current) fileInputRef.current.value = ""; };
+            const resetAnalysis = () => { setLogs([]); setAnalyzedData(null); setEnrichmentData({}); setError(null); setDebugLines(null); setParsing(false); if (fileInputRef.current) fileInputRef.current.value = ""; };
             const handleFileSelect = (e) => { const file = e.target.files[0]; if (file) processFile(file); };
             const handleDrop = (e) => { e.preventDefault(); setIsDragOver(false); const file = e.dataTransfer.files[0]; if (file) processFile(file); };
-            
-            const processFile = (file) => { 
+
+            const processFile = (file) => {
                 setError(null);
                 setDebugLines(null);
-                if (file.size > 5 * 1024 * 1024) { setError("File too large (Max 5MB)."); return; }
-                const reader = new FileReader(); 
-                reader.onload = (e) => parseLogs(e.target.result); 
-                reader.readAsText(file); 
+                setParsing(true);
+                if (file.size > 50 * 1024 * 1024) { setError("File too large (Max 50MB)."); setParsing(false); return; }
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const blob = new Blob([WORKER_CODE], { type: 'application/javascript' });
+                        const worker = new Worker(URL.createObjectURL(blob));
+                        worker.onmessage = (msg) => {
+                            const { success, error, logs, analyzedData, debugLines } = msg.data;
+                            if (error) {
+                                setError(error);
+                                if (debugLines) setDebugLines(debugLines);
+                            } else if (success) {
+                                setLogs(logs);
+                                const finalData = analyzedData.map(a => ({
+                                    ...a,
+                                    ports: new Set(a.ports),
+                                    destinations: new Set(a.destinations)
+                                }));
+                                setAnalyzedData(finalData);
+                            }
+                            setParsing(false);
+                            worker.terminate();
+                        };
+                        worker.postMessage({ text: e.target.result });
+                    } catch (err) { setError("Worker Init Failed: " + err.message); setParsing(false); }
+                };
+                reader.readAsText(file);
             };
 
             const parseLogs = (text) => {
                 try {
                     // Normalize line endings
                     const lines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split('\n');
-                    
+
                     if (lines.length > 50000) throw new Error("Line limit exceeded (Max 50k lines)");
                     const parsed = [];
-                    
+
                     const IP_REGEX_GLOBAL = /(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/g;
                     const PORT_REGEX = /(?:dst_port|dport|port|service)[:=]\s?(\d+)/i;
 
                     lines.forEach((line, index) => {
                         if (!line.trim()) return;
                         IP_REGEX_GLOBAL.lastIndex = 0;
-                        
+
                         const ips = line.match(IP_REGEX_GLOBAL);
                         const portMatch = line.match(PORT_REGEX);
-                        
+
                         if (ips && ips.length >= 2) {
-                            parsed.push({ 
-                                id: index, 
-                                raw: line, 
-                                src: ips[0], 
-                                dst: ips[1], 
-                                port: portMatch ? portMatch[1] : 'Unknown' 
+                            parsed.push({
+                                id: index,
+                                raw: line,
+                                src: ips[0],
+                                dst: ips[1],
+                                port: portMatch ? portMatch[1] : 'Unknown'
                             });
                         }
                     });
-                    
+
                     if (parsed.length === 0) {
                         setDebugLines(lines.slice(0, 5));
                         throw new Error("No IP addresses found. Check 'Debug Preview' below.");
@@ -444,28 +610,7 @@
                 } catch (err) { setError(err.message); }
             };
 
-            const analyzeAggregates = (parsedLogs) => {
-                const attackers = {};
-                parsedLogs.forEach(log => {
-                    if (isPrivateIP(log.src)) return; 
-                    if (!attackers[log.src]) attackers[log.src] = { ip: log.src, count: 0, ports: new Set(), destinations: new Set(), riskScore: 0, flags: [] };
-                    attackers[log.src].count++;
-                    attackers[log.src].ports.add(log.port);
-                    attackers[log.src].destinations.add(log.dst);
-                });
-                Object.values(attackers).forEach(attacker => {
-                    let score = 0;
-                    if (attacker.count > 100) { score += 20; attacker.flags.push("High Vol"); }
-                    attacker.ports.forEach(p => {
-                        const port = parseInt(p);
-                        if ([3389, 5900].includes(port)) { score += 50; attacker.flags.push("RDP/VNC"); }
-                        else if ([445, 139].includes(port)) { score += 30; attacker.flags.push("SMB"); }
-                    });
-                    if (attacker.destinations.size > 5) { score += 40; attacker.flags.push("Horiz. Scan"); }
-                    attacker.riskScore = score;
-                });
-                setAnalyzedData(Object.values(attackers).sort((a, b) => b.riskScore - a.riskScore));
-            };
+
 
             const enrichTopAttackers = async () => {
                 if (!analyzedData) return;
@@ -503,19 +648,19 @@
             return (
                 <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
                     <div className="lg:col-span-1 space-y-4">
-                        <div 
+                        <div
                             className={`drop-zone glass-panel rounded-xl p-8 text-center cursor-pointer ${isDragOver ? 'active' : ''}`}
                             onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
                             onDragLeave={() => setIsDragOver(false)}
                             onDrop={handleDrop}
-                            onClick={() => fileInputRef.current.click()} 
+                            onClick={() => fileInputRef.current.click()}
                         >
                             <input type="file" ref={fileInputRef} onChange={handleFileSelect} className="hidden" />
-                            <UploadCloud className="w-10 h-10 text-slate-500 mx-auto mb-3" />
-                            <p className="text-sm font-bold text-white">Tap to Upload</p>
-                            <p className="text-[10px] text-slate-500 mt-1">.csv, .txt (Nebula)</p>
+                            <UploadCloud className={`w-10 h-10 mx-auto mb-3 ${parsing ? 'text-blue-400 animate-pulse' : 'text-slate-500'}`} />
+                            <p className="text-sm font-bold text-white">{parsing ? 'Unpacking Logs...' : 'Tap to Upload'}</p>
+                            <p className="text-[10px] text-slate-500 mt-1">.csv, .txt (Max 50MB)</p>
                         </div>
-                        
+
                         {error && (
                             <div className="p-4 bg-red-900/40 border border-red-500/50 rounded-xl">
                                 <div className="flex items-center gap-2 text-red-200 text-sm font-bold mb-2">
@@ -526,7 +671,7 @@
                                     <div className="mt-3 p-2 bg-black/50 rounded text-[10px] font-mono text-slate-400 overflow-x-auto">
                                         <p className="mb-1 text-slate-500 font-bold uppercase">Debug Preview:</p>
                                         {debugLines.map((line, i) => (
-                                            <div key={i} className="whitespace-nowrap">{i+1}: {line.substring(0, 50)}...</div>
+                                            <div key={i} className="whitespace-nowrap">{i + 1}: {line.substring(0, 50)}...</div>
                                         ))}
                                     </div>
                                 )}
@@ -537,7 +682,7 @@
                             <div className="glass-panel rounded-xl p-4">
                                 <div className="flex justify-between items-center mb-3">
                                     <h3 className="text-xs font-bold text-slate-400 uppercase">Threat Summary</h3>
-                                    <button onClick={resetAnalysis} className="p-1 hover:bg-slate-700 rounded text-slate-400 hover:text-red-400" title="Clear All"><Trash2 className="w-4 h-4" /></button>
+                                    <button onClick={resetAnalysis} aria-label="Clear All data" className="p-1 hover:bg-slate-700 rounded text-slate-400 hover:text-red-400" title="Clear All"><Trash2 className="w-4 h-4" /></button>
                                 </div>
                                 <div className="space-y-2 mb-4">
                                     <div className="flex justify-between text-sm"><span className="text-slate-300">Sources</span><span className="font-mono text-white">{analyzedData.length}</span></div>
@@ -566,7 +711,7 @@
                                     const isHighRisk = attacker.riskScore > 40;
                                     // Visual Risk Meter Calculation
                                     const riskPercent = Math.min(attacker.riskScore, 100);
-                                    
+
                                     return (
                                         <div key={attacker.ip} className={`glass-panel rounded-xl p-4 border-l-4 ${isHighRisk ? 'border-l-red-500' : 'border-l-blue-500'} hover:bg-slate-800/50`}>
                                             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -583,7 +728,7 @@
                                                 <div className="flex-1">
                                                     {/* Risk Meter */}
                                                     <div className="w-full bg-slate-900 rounded-full h-1.5 mb-3 mt-1 overflow-hidden">
-                                                        <div className={`h-1.5 rounded-full ${isHighRisk ? 'bg-red-500' : 'bg-blue-500'}`} style={{width: `${riskPercent}%`}}></div>
+                                                        <div className={`h-1.5 rounded-full ${isHighRisk ? 'bg-red-500' : 'bg-blue-500'}`} style={{ width: `${riskPercent}%` }}></div>
                                                     </div>
                                                     <div className="flex flex-wrap gap-2">
                                                         {attacker.flags.length > 0 ? attacker.flags.map((flag, i) => <span key={i} className="px-2 py-1 rounded bg-red-500/20 text-red-200 text-xs border border-red-500/30 flex items-center gap-1"><AlertOctagon className="w-3 h-3" /> {flag}</span>) : <span className="px-2 py-1 rounded bg-slate-700 text-slate-300 text-xs">Probable Noise</span>}
@@ -615,18 +760,37 @@
             <a href={url} target="_blank" className={`text-xs text-center bg-slate-800 hover:bg-slate-700 py-1 px-3 rounded text-slate-300 border border-slate-700 block transition-colors ${color}`}>{name}</a>
         );
 
+        const Toast = ({ message, onClose }) => (
+            <div className="fixed bottom-4 right-4 z-50 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                <div className="bg-slate-800 text-white px-4 py-3 rounded-lg shadow-2xl border border-slate-600 flex items-center gap-3">
+                    <div className="bg-green-500/20 p-1 rounded-full"><ClipboardCheck className="w-4 h-4 text-green-400" /></div>
+                    <span className="text-sm font-bold">{message}</span>
+                    <button onClick={onClose} className="ml-2 hover:bg-slate-700 p-1 rounded"><Icon className="w-3 h-3"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></Icon></button>
+                </div>
+            </div>
+        );
+
         const App = () => {
             const [activeTab, setActiveTab] = useState('single');
+            const [toast, setToast] = useState(null);
+
+            useEffect(() => {
+                window.vibeToast = (msg) => {
+                    setToast(msg);
+                    setTimeout(() => setToast(null), 3000);
+                };
+            }, []);
             const tabs = [
-                { id: 'single', label: 'Single', icon: <Terminal className="w-4 h-4"/> },
-                { id: 'logs', label: 'Logs', icon: <FileText className="w-4 h-4"/> },
-                { id: 'dns', label: 'DNS', icon: <Globe className="w-4 h-4"/> },
-                { id: 'subnet', label: 'Subnet', icon: <Network className="w-4 h-4"/> },
-                { id: 'mac', label: 'MAC', icon: <Cpu className="w-4 h-4"/> },
+                { id: 'single', label: 'Single', icon: <Terminal className="w-4 h-4" /> },
+                { id: 'logs', label: 'Logs', icon: <FileText className="w-4 h-4" /> },
+                { id: 'dns', label: 'DNS', icon: <Globe className="w-4 h-4" /> },
+                { id: 'subnet', label: 'Subnet', icon: <Network className="w-4 h-4" /> },
+                { id: 'mac', label: 'MAC', icon: <Cpu className="w-4 h-4" /> },
             ];
 
             return (
                 <div className="min-h-screen p-4 md:p-8 flex flex-col items-center pb-24">
+                    {toast && <Toast message={toast} onClose={() => setToast(null)} />}
                     <div className="w-full max-w-6xl mb-8 flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             <div className="p-3 bg-blue-600 rounded-lg shadow-lg shadow-blue-500/20"><ShieldAlert className="w-8 h-8 text-white" /></div>
@@ -643,13 +807,13 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     {/* Navigation */}
                     <div className="bg-slate-900 p-1 rounded-xl border border-slate-700 flex flex-wrap justify-center gap-1 mb-8">
                         {tabs.map(tab => (
-                            <button 
+                            <button
                                 key={tab.id}
-                                onClick={() => setActiveTab(tab.id)} 
+                                onClick={() => setActiveTab(tab.id)}
                                 className={`px-4 py-2 rounded-lg text-xs md:text-sm font-bold transition-all border flex items-center gap-2 ${activeTab === tab.id ? 'tab-active' : 'tab-inactive'}`}
                             >
                                 {tab.icon} {tab.label}
@@ -672,4 +836,5 @@
         root.render(<App />);
     </script>
 </body>
+
 </html>
