@@ -366,7 +366,7 @@
             const fetchRecords = async (e) => {
                 e.preventDefault();
                 if (!input) return;
-                setLoading(true); setResults({});
+                setLoading(true); setResults(null);
 
                 const domain = input.trim().replace(/(^\w+:|^)\/\//, '');
                 const newResults = {};
