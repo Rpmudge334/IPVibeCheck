@@ -26,6 +26,15 @@
             border-radius: 4px;
         }
     </style>
+    <script>
+        window.onerror = function (msg, url, line, col, error) {
+            document.body.innerHTML += '<div style="color:red;background:black;padding:20px;z-index:9999;position:fixed;top:0;left:0;width:100%;font-family:monospace;white-space:pre-wrap;">GLOBAL ERROR:\n' + msg + '\nLine: ' + line + ':' + col + '\n' + (error ? error.stack : '') + '</div>';
+            return false;
+        };
+        window.addEventListener('unhandledrejection', function (event) {
+            document.body.innerHTML += '<div style="color:orange;background:black;padding:20px;z-index:9999;position:fixed;bottom:0;left:0;width:100%;font-family:monospace;white-space:pre-wrap;">PROMISE REJECTION:\n' + event.reason + '</div>';
+        });
+    </script>
 </head>
 
 <body>
