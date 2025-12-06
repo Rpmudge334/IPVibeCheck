@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Globe, Calendar, AlertTriangle, ShieldCheck, ExternalLink, Server } from 'lucide-react';
+import { Search, Globe, Calendar, AlertTriangle, ShieldCheck, ExternalLink, Server, History } from 'lucide-react';
 import InfoItem from './shared/InfoItem';
 import ExternalTool from './shared/ExternalTool';
 
@@ -18,57 +18,84 @@ const DomainAge = () => {
         let creationDate = null;
         let source = 'Unknown';
         let risk = 'Unknown';
-        let soaDate = null;
         let debugMsg = '';
 
         try {
-            // Strategy 1: Try RDAP (Best Data)
+            // Strategy 1: Wayback Machine "Digital Archaeology" (Best for Web Age)
+            // Checks for the FIRST snapshot ever taken of the domain
             try {
-                const rdapRes = await fetch(`https://rdap.org/domain/${domain}`);
-                if (rdapRes.ok) {
-                    const rdapJson = await rdapRes.json();
-
-                    // Parse RDAP Events
-                    if (rdapJson.events) {
-                        const regEvent = rdapJson.events.find(e => e.eventAction === 'registration');
-                        if (regEvent) {
-                            creationDate = regEvent.eventDate.split('T')[0];
-                            source = 'RDAP (Official)';
-                        }
+                // Use a CORS proxy if possible, but archive.org is often friendly or allows simple GET
+                // We use the CDX API which is lighter than the full wayback UI
+                const waybackRes = await fetch(`https://web.archive.org/cdx/search/cdx?url=${domain}&limit=1&fl=timestamp&output=json`);
+                if (waybackRes.ok) {
+                    const waybackJson = await waybackRes.json();
+                    // Format: [["timestamp"], ["20010505..."]]
+                    if (waybackJson.length > 1 && waybackJson[1][0]) {
+                        const ts = waybackJson[1][0]; // "19961020014044"
+                        const year = parseInt(ts.substring(0, 4));
+                        const month = parseInt(ts.substring(4, 6)) - 1;
+                        const day = parseInt(ts.substring(6, 8));
+                        creationDate = new Date(year, month, day).toISOString().split('T')[0];
+                        source = 'Wayback Machine (First Snapshot)';
                     }
                 } else {
-                    debugMsg += `RDAP Status: ${rdapRes.status}; `;
+                    debugMsg += `Archive.org Status: ${waybackRes.status}; `;
                 }
-            } catch (rdapErr) {
-                console.warn("RDAP lookup failed", rdapErr);
-                debugMsg += `RDAP Error: ${rdapErr.message}; `;
+            } catch (wbErr) {
+                console.warn("Wayback Machine lookup failed", wbErr);
+                debugMsg += `Archive.org Error: ${wbErr.message}; `; // Likely CORS if blocked
             }
 
-            // Strategy 2: Google DNS SOA Serial Heuristic (Fallback)
+            // Strategy 2: Try RDAP (Official Registry Data)
             if (!creationDate) {
-                const dnsRes = await fetch(`https://dns.google/resolve?name=${domain}&type=SOA`);
-                const dnsJson = await dnsRes.json();
-
-                if (dnsJson.Answer && dnsJson.Answer.length > 0) {
-                    const soaData = dnsJson.Answer[0].data;
-                    const parts = soaData.split(' ');
-                    const serial = parts[2];
-
-                    // Check if it looks like YYYYMMDDxx
-                    if (/^20\d{6}\d{2}$/.test(serial)) {
-                        const year = parseInt(serial.substring(0, 4));
-                        const month = parseInt(serial.substring(4, 6)) - 1;
-                        const day = parseInt(serial.substring(6, 8));
-                        soaDate = new Date(year, month, day);
-                        if (!isNaN(soaDate.getTime())) {
-                            source = 'SOA Serial (Heuristic)';
-                            creationDate = soaDate.toISOString().split('T')[0];
+                try {
+                    const rdapRes = await fetch(`https://rdap.org/domain/${domain}`);
+                    if (rdapRes.ok) {
+                        const rdapJson = await rdapRes.json();
+                        if (rdapJson.events) {
+                            const regEvent = rdapJson.events.find(e => e.eventAction === 'registration');
+                            if (regEvent) {
+                                creationDate = regEvent.eventDate.split('T')[0];
+                                source = 'RDAP (Official)';
+                            }
                         }
                     } else {
-                        debugMsg += `SOA Serial format mismatch: ${serial}; `;
+                        debugMsg += `RDAP Status: ${rdapRes.status}; `;
                     }
-                } else {
-                    debugMsg += 'No SOA record found; ';
+                } catch (rdapErr) {
+                    debugMsg += `RDAP Error: ${rdapErr.message}; `;
+                }
+            }
+
+            // Strategy 3: Google DNS SOA Serial Heuristic (Fallback)
+            if (!creationDate) {
+                try {
+                    const dnsRes = await fetch(`https://dns.google/resolve?name=${domain}&type=SOA`);
+                    const dnsJson = await dnsRes.json();
+
+                    if (dnsJson.Answer && dnsJson.Answer.length > 0) {
+                        const soaData = dnsJson.Answer[0].data;
+                        const parts = soaData.split(' ');
+                        const serial = parts[2]; // usually 3rd field
+
+                        // Check if it looks like YYYYMMDDxx
+                        if (/^20\d{6}\d{2}$/.test(serial)) {
+                            const year = parseInt(serial.substring(0, 4));
+                            const month = parseInt(serial.substring(4, 6)) - 1;
+                            const day = parseInt(serial.substring(6, 8));
+                            const soaDate = new Date(year, month, day);
+                            if (!isNaN(soaDate.getTime())) {
+                                source = 'SOA Serial (Heuristic)';
+                                creationDate = soaDate.toISOString().split('T')[0];
+                            }
+                        } else {
+                            debugMsg += `SOA Format Mismatch: ${serial}; `;
+                        }
+                    } else {
+                        debugMsg += 'No SOA record; ';
+                    }
+                } catch (dnsErr) {
+                    debugMsg += `DNS Error: ${dnsErr.message}; `;
                 }
             }
 
@@ -117,7 +144,7 @@ const DomainAge = () => {
             <div className="p-4 bg-orange-900/20 border border-orange-500/30 rounded-lg mb-8 text-xs text-orange-200 flex gap-3 items-start">
                 <AlertTriangle className="w-5 h-5 flex-shrink-0" />
                 <div>
-                    <strong>Note on Accuracy:</strong> Client-side domain age checks use heuristics (like SOA records) which update on changes, not just creation. For a 100% confirmed registration date, use the official lookup below.
+                    <strong>Note on Accuracy:</strong> We use the <strong>Wayback Machine</strong> to find the first time this domain was ever seen on the web. This is an excellent proxy for domain age when official Whois data is private or blocked by CORS.
                 </div>
             </div>
 
@@ -137,8 +164,8 @@ const DomainAge = () => {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                        <InfoItem label="Reference Date (SOA)" value={result.creationDate} icon={<Calendar className="w-4 h-4" />} />
-                        <InfoItem label="Data Source" value={result.source} icon={<Server className="w-4 h-4" />} />
+                        <InfoItem label="Reference Date" value={result.creationDate} icon={<Calendar className="w-4 h-4" />} />
+                        <InfoItem label="Data Source" value={result.source} icon={<History className="w-4 h-4" />} />
                     </div>
 
                     <div className="p-4 bg-slate-800 rounded-xl border border-slate-700">
