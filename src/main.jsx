@@ -9,9 +9,9 @@ try {
 
 const DebugApp = () => (
     <div className="p-10 text-white font-mono text-xl">
-        <h1 className="text-4xl text-green-400 font-bold mb-4">SYSTEM ONLINE</h1>
-        <p>If you can see this, React is working.</p>
-        <p>The previous crash was likely inside App.jsx.</p>
+        <h1 className="text-4xl text-green-400 font-bold mb-4">SYSTEM ONLINE (IIFE MODE)</h1>
+        <p>If you can see this, React is working in Legacy/IIFE mode.</p>
+        <p>The file:// restrictions have been bypassed.</p>
     </div>
 );
 

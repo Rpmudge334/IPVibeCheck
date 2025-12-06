@@ -7,7 +7,7 @@ export default defineConfig({
     base: "./",
     plugins: [react(), viteSingleFile()],
     build: {
-        target: "esnext",
+        target: "es2015",
         assetsInlineLimit: 100000000,
         chunkSizeWarningLimit: 100000000,
         cssCodeSplit: false,
@@ -15,6 +15,7 @@ export default defineConfig({
         rollupOptions: {
             output: {
                 inlineDynamicImports: true,
+                format: 'iife',
             },
         },
     },
