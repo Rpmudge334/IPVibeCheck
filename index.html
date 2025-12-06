@@ -354,6 +354,7 @@
                                             <ExternalTool name="VirusTotal" url={`https://www.virustotal.com/gui/${data.isDomain ? 'domain' : 'ip-address'}/${data.isDomain ? data.originalInput : data.ip}`} color="hover:border-blue-500 hover:text-blue-400" />
                                             <ExternalTool name="AbuseIPDB" url={`https://www.abuseipdb.com/check/${data.ip}`} color="hover:border-orange-500 hover:text-orange-400" />
                                             <ExternalTool name="Talos Intel" url={`https://talosintelligence.com/reputation_center/lookup?search=${data.ip}`} color="hover:border-teal-500 hover:text-teal-400" />
+                                            <ExternalTool name="Shodan" url={`https://www.shodan.io/host/${data.ip}`} color="hover:border-red-500 hover:text-red-400" />
                                         </div>
                                     </div>
                                 </div>
@@ -527,160 +528,48 @@
                             <p className="text-slate-400 text-xs uppercase font-bold mb-2">OUI Vendor</p>
                             <h2 className="text-3xl font-bold text-white tracking-tight">{vendor}</h2>
                         </div>
-                    )}
-                </div>
-            );
-        };
+            const [enrichmentData, setEnrichmentData] = useState({ });
+                    const [enriching, setEnriching] = useState(false);
+                    const [parsing, setParsing] = useState(false);
+                    const [error, setError] = useState(null);
+                    const [debugLines, setDebugLines] = useState(null);
+                    const fileInputRef = useRef(null);
 
-        const ShodanIntel = () => {
-            const [input, setInput] = useState('');
-            const [apiKey, setApiKey] = useState(localStorage.getItem('shodan_key') || '');
-            const [data, setData] = useState(null);
-            const [loading, setLoading] = useState(false);
-            const [error, setError] = useState(null);
-
-            const saveKey = (val) => {
-                setApiKey(val);
-                localStorage.setItem('shodan_key', val);
-            };
-
-            const scan = async (e) => {
-                e.preventDefault();
-                if (!input || !apiKey) return;
-                setLoading(true); setError(null); setData(null);
-
-                try {
-                    const res = await fetch(`https://api.shodan.io/shodan/host/${input}?key=${apiKey}`);
-                    if (!res.ok) {
-                        let msg = `HTTP ${res.status}`;
-                        try { const text = await res.text(); const json = JSON.parse(text); msg = json.error || msg; } catch (e) { }
-                        throw new Error(msg);
-                    }
-                    const json = await res.json();
-                    setData(json);
-                } catch (err) {
-                    setError(err.message === 'HTTP 401' ? 'Invalid API Key' : err.message);
-                } finally {
-                    setLoading(false);
-                }
-            };
-
-            return (
-                <div className="max-w-4xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
-                    <div className="mb-8 p-4 glass-panel rounded-xl border border-slate-700 flex flex-col md:flex-row gap-4 items-center">
-                        <div className="flex-1 w-full">
-                            <label className="text-[10px] uppercase font-bold text-slate-500 mb-1 block">Shodan API Key</label>
-                            <input type="password" value={apiKey} onChange={(e) => saveKey(e.target.value)} placeholder="Enter Key" className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-white text-xs font-mono focus:border-red-500 outline-none" />
-                        </div>
-                        <div className="flex-1 w-full relative">
-                            <label className="text-[10px] uppercase font-bold text-slate-500 mb-1 block">Target IP</label>
-                            <div className="relative">
-                                <input type="text" value={input} onChange={(e) => setInput(e.target.value)} placeholder="1.2.3.4" className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-white text-xs font-mono focus:border-red-500 outline-none pl-8" />
-                                <div className="absolute left-2 top-2 text-slate-500"><Search className="w-4 h-4" /></div>
-                            </div>
-                        </div>
-                        <button onClick={scan} disabled={loading || !apiKey} className="w-full md:w-auto mt-4 md:mt-0 bg-red-600 hover:bg-red-500 text-white font-bold py-2 px-6 rounded-lg disabled:opacity-50 transition-all">{loading ? '...' : 'Scan'}</button>
-                    </div>
-
-                    {error && (
-                        <div className="p-4 bg-red-900/30 border border-red-500/50 rounded-xl text-red-200 text-sm flex items-center gap-2">
-                            <AlertTriangle className="w-4 h-4" /> {error}
-                        </div>
-                    )}
-
-                    {data && (
-                        <div className="space-y-6">
-                            <div className="glass-panel p-6 rounded-xl border border-red-900/30 flex justify-between items-start">
-                                <div>
-                                    <h2 className="text-2xl font-bold text-white font-mono flex items-center gap-3">
-                                        {data.ip_str}
-                                        {data.country_code && <img src={`https://flagcdn.com/w40/${data.country_code.toLowerCase()}.png`} alt={data.country_name} className="h-4 rounded" />}
-                                    </h2>
-                                    <p className="text-slate-400 text-sm mt-1">{data.org} | {data.os || 'Unknown OS'}</p>
-                                </div>
-                                <div className="text-right">
-                                    <div className="text-[10px] text-slate-500 uppercase">Last Update</div>
-                                    <div className="text-white font-mono text-sm">{data.last_update}</div>
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                {data.data && data.data.map((service, i) => (
-                                    <div key={i} className="glass-panel p-4 rounded-xl border border-slate-700 hover:border-red-500/50 transition-colors">
-                                        <div className="flex justify-between items-center mb-2">
-                                            <span className="text-xl font-bold text-white">{service.port}</span>
-                                            <span className="text-[10px] font-bold bg-slate-800 px-2 py-1 rounded text-slate-300">{service.transport.toUpperCase()}</span>
-                                        </div>
-                                        <div className="text-xs text-red-300 font-bold mb-1">{service.product || 'Unknown Service'}</div>
-                                        <div className="text-[10px] text-slate-500 font-mono truncate">{service.version}</div>
-                                    </div>
-                                ))}
-                            </div>
-
-                            {data.vulns && data.vulns.length > 0 && (
-                                <div className="glass-panel p-6 rounded-xl border border-red-900/30">
-                                    <h3 className="text-white font-bold mb-4 flex items-center gap-2"><Zap className="w-4 h-4 text-yellow-500" /> Vulnerabilities ({data.vulns.length})</h3>
-                                    <div className="flex flex-wrap gap-2">
-                                        {data.vulns.map((cve, i) => (
-                                            <a key={i} href={`https://nvd.nist.gov/vuln/detail/${cve}`} target="_blank" className="bg-red-900/40 text-red-200 border border-red-500/30 px-3 py-1 rounded text-xs hover:bg-red-500 hover:text-white transition-colors">
-                                                {cve}
-                                            </a>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    )}
-                </div>
-            );
-        };
-
-        const LogAnalyzer = () => {
-            const [logs, setLogs] = useState([]);
-            const [isDragOver, setIsDragOver] = useState(false);
-            const [analyzedData, setAnalyzedData] = useState(null);
-            const [enrichmentData, setEnrichmentData] = useState({});
-            const [enriching, setEnriching] = useState(false);
-            const [parsing, setParsing] = useState(false);
-            const [error, setError] = useState(null);
-            const [debugLines, setDebugLines] = useState(null);
-            const fileInputRef = useRef(null);
-
-            const resetAnalysis = () => { setLogs([]); setAnalyzedData(null); setEnrichmentData({}); setError(null); setDebugLines(null); setParsing(false); if (fileInputRef.current) fileInputRef.current.value = ""; };
+            const resetAnalysis = () => {setLogs([]); setAnalyzedData(null); setEnrichmentData({ }); setError(null); setDebugLines(null); setParsing(false); if (fileInputRef.current) fileInputRef.current.value = ""; };
             const handleFileSelect = (e) => { const file = e.target.files[0]; if (file) processFile(file); };
-            const handleDrop = (e) => { e.preventDefault(); setIsDragOver(false); const file = e.dataTransfer.files[0]; if (file) processFile(file); };
+            const handleDrop = (e) => {e.preventDefault(); setIsDragOver(false); const file = e.dataTransfer.files[0]; if (file) processFile(file); };
 
             const processFile = (file) => {
-                setError(null);
-                setDebugLines(null);
-                setParsing(true);
-                if (file.size > 50 * 1024 * 1024) { setError("File too large (Max 50MB)."); setParsing(false); return; }
-                const reader = new FileReader();
+                        setError(null);
+                    setDebugLines(null);
+                    setParsing(true);
+                if (file.size > 50 * 1024 * 1024) {setError("File too large (Max 50MB)."); setParsing(false); return; }
+                    const reader = new FileReader();
                 reader.onload = (e) => {
                     try {
-                        const blob = new Blob([WORKER_CODE], { type: 'application/javascript' });
-                        const worker = new Worker(URL.createObjectURL(blob));
+                        const blob = new Blob([WORKER_CODE], {type: 'application/javascript' });
+                    const worker = new Worker(URL.createObjectURL(blob));
                         worker.onmessage = (msg) => {
-                            const { success, error, logs, analyzedData, debugLines } = msg.data;
-                            if (error) {
-                                setError(error);
-                                if (debugLines) setDebugLines(debugLines);
+                            const {success, error, logs, analyzedData, debugLines} = msg.data;
+                    if (error) {
+                        setError(error);
+                    if (debugLines) setDebugLines(debugLines);
                             } else if (success) {
-                                setLogs(logs);
+                        setLogs(logs);
                                 const finalData = analyzedData.map(a => ({
-                                    ...a,
-                                    ports: new Set(a.ports),
-                                    destinations: new Set(a.destinations)
+                        ...a,
+                        ports: new Set(a.ports),
+                    destinations: new Set(a.destinations)
                                 }));
-                                setAnalyzedData(finalData);
+                    setAnalyzedData(finalData);
                             }
-                            setParsing(false);
-                            worker.terminate();
+                    setParsing(false);
+                    worker.terminate();
                         };
-                        worker.postMessage({ text: e.target.result });
-                    } catch (err) { setError("Worker Init Failed: " + err.message); setParsing(false); }
+                    worker.postMessage({text: e.target.result });
+                    } catch (err) {setError("Worker Init Failed: " + err.message); setParsing(false); }
                 };
-                reader.readAsText(file);
+                    reader.readAsText(file);
             };
 
             const parseLogs = (text) => {
@@ -691,75 +580,75 @@
                     if (lines.length > 50000) throw new Error("Line limit exceeded (Max 50k lines)");
                     const parsed = [];
 
-                    const IP_REGEX_GLOBAL = /(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/g;
+                    const IP_REGEX_GLOBAL = /(\d{1, 3}\.\d{1, 3}\.\d{1, 3}\.\d{1, 3})/g;
                     const PORT_REGEX = /(?:dst_port|dport|port|service)[:=]\s?(\d+)/i;
 
                     lines.forEach((line, index) => {
                         if (!line.trim()) return;
-                        IP_REGEX_GLOBAL.lastIndex = 0;
+                    IP_REGEX_GLOBAL.lastIndex = 0;
 
-                        const ips = line.match(IP_REGEX_GLOBAL);
-                        const portMatch = line.match(PORT_REGEX);
+                    const ips = line.match(IP_REGEX_GLOBAL);
+                    const portMatch = line.match(PORT_REGEX);
 
                         if (ips && ips.length >= 2) {
-                            parsed.push({
-                                id: index,
-                                raw: line,
-                                src: ips[0],
-                                dst: ips[1],
-                                port: portMatch ? portMatch[1] : 'Unknown'
-                            });
+                        parsed.push({
+                            id: index,
+                            raw: line,
+                            src: ips[0],
+                            dst: ips[1],
+                            port: portMatch ? portMatch[1] : 'Unknown'
+                        });
                         }
                     });
 
                     if (parsed.length === 0) {
                         setDebugLines(lines.slice(0, 5));
-                        throw new Error("No IP addresses found. Check 'Debug Preview' below.");
+                    throw new Error("No IP addresses found. Check 'Debug Preview' below.");
                     }
                     setLogs(parsed);
                     analyzeAggregates(parsed);
-                } catch (err) { setError(err.message); }
+                } catch (err) {setError(err.message); }
             };
 
 
 
             const enrichTopAttackers = async () => {
                 if (!analyzedData) return;
-                setEnriching(true);
-                const targets = analyzedData.slice(0, 5);
-                const results = { ...enrichmentData };
-                for (const target of targets) {
+                    setEnriching(true);
+                    const targets = analyzedData.slice(0, 5);
+                    const results = {...enrichmentData};
+                    for (const target of targets) {
                     if (results[target.ip]) continue;
                     try {
                         const res = await fetch(`https://ipwho.is/${target.ip}`);
-                        const json = await res.json();
-                        results[target.ip] = { country: json.country_code, isp: json.connection?.isp, flag: json.flag?.img };
-                    } catch (e) { console.error("Enrich fail", target.ip); }
+                    const json = await res.json();
+                    results[target.ip] = {country: json.country_code, isp: json.connection?.isp, flag: json.flag?.img };
+                    } catch (e) {console.error("Enrich fail", target.ip); }
                     await delay(500);
                 }
-                setEnrichmentData(results);
-                setEnriching(false);
+                    setEnrichmentData(results);
+                    setEnriching(false);
             };
 
             const ChartSection = () => {
                 if (!analyzedData || analyzedData.length === 0) return null;
-                if (!RechartsObj) return <div className="p-4 text-center text-red-400 text-xs border border-red-500/30 bg-red-900/20 rounded-xl mb-4">Visualizations Unavailable (Library failed to load)</div>;
+                    if (!RechartsObj) return <div className="p-4 text-center text-red-400 text-xs border border-red-500/30 bg-red-900/20 rounded-xl mb-4">Visualizations Unavailable (Library failed to load)</div>;
 
-                const topAttackers = analyzedData.slice(0, 8);
-                const portCounts = {};
+                    const topAttackers = analyzedData.slice(0, 8);
+                    const portCounts = { };
                 analyzedData.forEach(d => {
-                    d.ports.forEach(p => {
-                        portCounts[p] = (portCounts[p] || 0) + 1;
-                    });
+                        d.ports.forEach(p => {
+                            portCounts[p] = (portCounts[p] || 0) + 1;
+                        });
                 });
-                const topPorts = Object.entries(portCounts)
-                    .map(([port, count]) => ({ name: port, value: count }))
+                    const topPorts = Object.entries(portCounts)
+                    .map(([port, count]) => ({name: port, value: count }))
                     .sort((a, b) => b.value - a.value)
                     .slice(0, 5);
 
-                const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff8042', '#0088FE'];
+                    const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff8042', '#0088FE'];
 
-                return (
+                    return (
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
                         <div className="glass-panel p-4 rounded-xl border border-slate-700">
                             <h3 className="text-white text-sm font-bold mb-4 flex items-center gap-2"><Activity className="w-4 h-4 text-purple-400" /> Top Talkers</h3>
@@ -807,301 +696,299 @@
                             </div>
                         </div>
                     </div>
-                );
+                    );
             };
 
 
 
             const exportCSV = () => {
                 if (!analyzedData) return;
-                const headers = "IP,Count,Risk Score,ISP,Country,Ports,Flags\n";
+                    const headers = "IP,Count,Risk Score,ISP,Country,Ports,Flags\n";
                 const rows = analyzedData.map(a => {
-                    const enriched = enrichmentData[a.ip] || {};
+                    const enriched = enrichmentData[a.ip] || { };
                     return `${a.ip},${a.count},${a.riskScore},"${enriched.isp || ''}","${enriched.country || ''}","${Array.from(a.ports).join('|')}","${a.flags.join('|')}"`;
                 }).join("\n");
-                const blob = new Blob([headers + rows], { type: 'text/csv' });
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `vibe_check_export_${new Date().toISOString().split('T')[0]}.csv`;
-                a.click();
+                    const blob = new Blob([headers + rows], {type: 'text/csv' });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `vibe_check_export_${new Date().toISOString().split('T')[0]}.csv`;
+                    a.click();
             };
 
-            return (
-                <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                    <div className="lg:col-span-1 space-y-4">
-                        <div
-                            className={`drop-zone glass-panel rounded-xl p-8 text-center cursor-pointer ${isDragOver ? 'active' : ''}`}
-                            onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
-                            onDragLeave={() => setIsDragOver(false)}
-                            onDrop={handleDrop}
-                            onClick={() => fileInputRef.current.click()}
-                        >
-                            <input type="file" ref={fileInputRef} onChange={handleFileSelect} className="hidden" />
-                            <UploadCloud className={`w-10 h-10 mx-auto mb-3 ${parsing ? 'text-blue-400 animate-pulse' : 'text-slate-500'}`} />
-                            <p className="text-sm font-bold text-white">{parsing ? 'Unpacking Logs...' : 'Tap to Upload'}</p>
-                            <p className="text-[10px] text-slate-500 mt-1">.csv, .txt (Max 50MB)</p>
-                        </div>
+                    return (
+                    <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        <div className="lg:col-span-1 space-y-4">
+                            <div
+                                className={`drop-zone glass-panel rounded-xl p-8 text-center cursor-pointer ${isDragOver ? 'active' : ''}`}
+                                onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
+                                onDragLeave={() => setIsDragOver(false)}
+                                onDrop={handleDrop}
+                                onClick={() => fileInputRef.current.click()}
+                            >
+                                <input type="file" ref={fileInputRef} onChange={handleFileSelect} className="hidden" />
+                                <UploadCloud className={`w-10 h-10 mx-auto mb-3 ${parsing ? 'text-blue-400 animate-pulse' : 'text-slate-500'}`} />
+                                <p className="text-sm font-bold text-white">{parsing ? 'Unpacking Logs...' : 'Tap to Upload'}</p>
+                                <p className="text-[10px] text-slate-500 mt-1">.csv, .txt (Max 50MB)</p>
+                            </div>
 
-                        {error && (
-                            <div className="p-4 bg-red-900/40 border border-red-500/50 rounded-xl">
-                                <div className="flex items-center gap-2 text-red-200 text-sm font-bold mb-2">
-                                    <AlertTriangle className="w-4 h-4" /> Scan Failed
-                                </div>
-                                <p className="text-xs text-red-300 opacity-90">{error}</p>
-                                {debugLines && (
-                                    <div className="mt-3 p-2 bg-black/50 rounded text-[10px] font-mono text-slate-400 overflow-x-auto">
-                                        <p className="mb-1 text-slate-500 font-bold uppercase">Debug Preview:</p>
-                                        {debugLines.map((line, i) => (
-                                            <div key={i} className="whitespace-nowrap">{i + 1}: {line.substring(0, 50)}...</div>
-                                        ))}
+                            {error && (
+                                <div className="p-4 bg-red-900/40 border border-red-500/50 rounded-xl">
+                                    <div className="flex items-center gap-2 text-red-200 text-sm font-bold mb-2">
+                                        <AlertTriangle className="w-4 h-4" /> Scan Failed
                                     </div>
-                                )}
-                            </div>
-                        )}
-
-                        {analyzedData && (
-                            <div className="glass-panel rounded-xl p-4">
-                                <div className="flex justify-between items-center mb-3">
-                                    <h3 className="text-xs font-bold text-slate-400 uppercase">Threat Summary</h3>
-                                    <button onClick={resetAnalysis} aria-label="Clear All data" className="p-1 hover:bg-slate-700 rounded text-slate-400 hover:text-red-400" title="Clear All"><Trash2 className="w-4 h-4" /></button>
+                                    <p className="text-xs text-red-300 opacity-90">{error}</p>
+                                    {debugLines && (
+                                        <div className="mt-3 p-2 bg-black/50 rounded text-[10px] font-mono text-slate-400 overflow-x-auto">
+                                            <p className="mb-1 text-slate-500 font-bold uppercase">Debug Preview:</p>
+                                            {debugLines.map((line, i) => (
+                                                <div key={i} className="whitespace-nowrap">{i + 1}: {line.substring(0, 50)}...</div>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
-                                <div className="space-y-2 mb-4">
-                                    <div className="flex justify-between text-sm"><span className="text-slate-300">Sources</span><span className="font-mono text-white">{analyzedData.length}</span></div>
-                                    <div className="flex justify-between text-sm"><span className="text-red-400">Critical</span><span className="font-mono text-red-400">{analyzedData.filter(a => a.riskScore > 50).length}</span></div>
-                                </div>
-                                <button onClick={enrichTopAttackers} disabled={enriching} className="w-full bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold py-2 rounded flex items-center justify-center gap-2 disabled:opacity-50 mb-2">
-                                    <RefreshCw className={`w-3 h-3 ${enriching ? 'animate-spin' : ''}`} /> {enriching ? 'Checking...' : 'Enrich Top 5'}
-                                </button>
-                                <button onClick={exportCSV} className="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold py-2 rounded flex items-center justify-center gap-2 border border-slate-700">
-                                    <FileText className="w-3 h-3" /> Export to CSV
-                                </button>
-                            </div>
-                        )}
-                    </div>
-                    <div className="lg:col-span-3">
-                        {!analyzedData ? (
-                            <div className="glass-panel rounded-xl p-12 text-center flex flex-col items-center justify-center h-64 border-dashed border-2 border-slate-700">
-                                <Server className="w-12 h-12 text-slate-600 mb-4 opacity-50" />
-                                <h3 className="text-xl font-bold text-slate-500">Ready</h3>
-                                <p className="text-slate-600 mt-2 text-sm">Select a log file to analyze.</p>
-                            </div>
-                        ) : (
-                            <div className="space-y-4">
-                                {analyzedData.map((attacker) => {
-                                    const enriched = enrichmentData[attacker.ip];
-                                    const isHighRisk = attacker.riskScore > 40;
-                                    // Visual Risk Meter Calculation
-                                    const riskPercent = Math.min(attacker.riskScore, 100);
+                            )}
 
-                                    return (
-                                        <div key={attacker.ip} className={`glass-panel rounded-xl p-4 border-l-4 ${isHighRisk ? 'border-l-red-500' : 'border-l-blue-500'} hover:bg-slate-800/50`}>
-                                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                                                <div className="flex items-center gap-4">
-                                                    <div className="bg-slate-900 p-2 rounded text-center min-w-[3rem]"><div className="text-[10px] text-slate-500">HITS</div><div className="font-mono font-bold text-white">{attacker.count}</div></div>
-                                                    <div>
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="font-mono text-lg font-bold text-white">{attacker.ip}</span>
-                                                            {enriched && <img src={enriched.flag} className="w-5 h-auto rounded" />}
+                            {analyzedData && (
+                                <div className="glass-panel rounded-xl p-4">
+                                    <div className="flex justify-between items-center mb-3">
+                                        <h3 className="text-xs font-bold text-slate-400 uppercase">Threat Summary</h3>
+                                        <button onClick={resetAnalysis} aria-label="Clear All data" className="p-1 hover:bg-slate-700 rounded text-slate-400 hover:text-red-400" title="Clear All"><Trash2 className="w-4 h-4" /></button>
+                                    </div>
+                                    <div className="space-y-2 mb-4">
+                                        <div className="flex justify-between text-sm"><span className="text-slate-300">Sources</span><span className="font-mono text-white">{analyzedData.length}</span></div>
+                                        <div className="flex justify-between text-sm"><span className="text-red-400">Critical</span><span className="font-mono text-red-400">{analyzedData.filter(a => a.riskScore > 50).length}</span></div>
+                                    </div>
+                                    <button onClick={enrichTopAttackers} disabled={enriching} className="w-full bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold py-2 rounded flex items-center justify-center gap-2 disabled:opacity-50 mb-2">
+                                        <RefreshCw className={`w-3 h-3 ${enriching ? 'animate-spin' : ''}`} /> {enriching ? 'Checking...' : 'Enrich Top 5'}
+                                    </button>
+                                    <button onClick={exportCSV} className="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold py-2 rounded flex items-center justify-center gap-2 border border-slate-700">
+                                        <FileText className="w-3 h-3" /> Export to CSV
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                        <div className="lg:col-span-3">
+                            {!analyzedData ? (
+                                <div className="glass-panel rounded-xl p-12 text-center flex flex-col items-center justify-center h-64 border-dashed border-2 border-slate-700">
+                                    <Server className="w-12 h-12 text-slate-600 mb-4 opacity-50" />
+                                    <h3 className="text-xl font-bold text-slate-500">Ready</h3>
+                                    <p className="text-slate-600 mt-2 text-sm">Select a log file to analyze.</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    {analyzedData.map((attacker) => {
+                                        const enriched = enrichmentData[attacker.ip];
+                                        const isHighRisk = attacker.riskScore > 40;
+                                        // Visual Risk Meter Calculation
+                                        const riskPercent = Math.min(attacker.riskScore, 100);
+
+                                        return (
+                                            <div key={attacker.ip} className={`glass-panel rounded-xl p-4 border-l-4 ${isHighRisk ? 'border-l-red-500' : 'border-l-blue-500'} hover:bg-slate-800/50`}>
+                                                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="bg-slate-900 p-2 rounded text-center min-w-[3rem]"><div className="text-[10px] text-slate-500">HITS</div><div className="font-mono font-bold text-white">{attacker.count}</div></div>
+                                                        <div>
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="font-mono text-lg font-bold text-white">{attacker.ip}</span>
+                                                                {enriched && <img src={enriched.flag} className="w-5 h-auto rounded" />}
+                                                            </div>
+                                                            <div className="text-xs text-slate-400 mt-1">{enriched ? enriched.isp : 'Pending Enrichment...'}</div>
                                                         </div>
-                                                        <div className="text-xs text-slate-400 mt-1">{enriched ? enriched.isp : 'Pending Enrichment...'}</div>
                                                     </div>
-                                                </div>
-                                                <div className="flex-1">
-                                                    {/* Risk Meter */}
-                                                    <div className="w-full bg-slate-900 rounded-full h-1.5 mb-3 mt-1 overflow-hidden">
-                                                        <div className={`h-1.5 rounded-full ${isHighRisk ? 'bg-red-500' : 'bg-blue-500'}`} style={{ width: `${riskPercent}%` }}></div>
+                                                    <div className="flex-1">
+                                                        {/* Risk Meter */}
+                                                        <div className="w-full bg-slate-900 rounded-full h-1.5 mb-3 mt-1 overflow-hidden">
+                                                            <div className={`h-1.5 rounded-full ${isHighRisk ? 'bg-red-500' : 'bg-blue-500'}`} style={{ width: `${riskPercent}%` }}></div>
+                                                        </div>
+                                                        <div className="flex flex-wrap gap-2">
+                                                            {attacker.flags.length > 0 ? attacker.flags.map((flag, i) => <span key={i} className="px-2 py-1 rounded bg-red-500/20 text-red-200 text-xs border border-red-500/30 flex items-center gap-1"><AlertOctagon className="w-3 h-3" /> {flag}</span>) : <span className="px-2 py-1 rounded bg-slate-700 text-slate-300 text-xs">Probable Noise</span>}
+                                                        </div>
+                                                        <div className="text-xs text-slate-500 mt-2">Ports: {Array.from(attacker.ports).slice(0, 5).join(', ')}</div>
                                                     </div>
-                                                    <div className="flex flex-wrap gap-2">
-                                                        {attacker.flags.length > 0 ? attacker.flags.map((flag, i) => <span key={i} className="px-2 py-1 rounded bg-red-500/20 text-red-200 text-xs border border-red-500/30 flex items-center gap-1"><AlertOctagon className="w-3 h-3" /> {flag}</span>) : <span className="px-2 py-1 rounded bg-slate-700 text-slate-300 text-xs">Probable Noise</span>}
+                                                    <div className="flex flex-col gap-2 min-w-[100px]">
+                                                        <ExternalTool name="AbuseIPDB" url={`https://www.abuseipdb.com/check/${attacker.ip}`} color="hover:border-orange-500 hover:text-orange-400" />
                                                     </div>
-                                                    <div className="text-xs text-slate-500 mt-2">Ports: {Array.from(attacker.ports).slice(0, 5).join(', ')}</div>
-                                                </div>
-                                                <div className="flex flex-col gap-2 min-w-[100px]">
-                                                    <ExternalTool name="AbuseIPDB" url={`https://www.abuseipdb.com/check/${attacker.ip}`} color="hover:border-orange-500 hover:text-orange-400" />
                                                 </div>
                                             </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        )}
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
                     </div>
-                </div>
-            );
+                    );
         };
 
-        const InfoItem = ({ label, value, icon }) => (
-            <div className="p-3 bg-slate-800/50 rounded-lg border border-slate-700/50 hover:bg-slate-800 transition-colors">
-                <div className="flex items-center gap-2 text-slate-400 text-xs uppercase tracking-wider mb-1">{icon}{label}</div>
-                <div className="text-white font-medium truncate" title={value}>{value || 'Unknown'}</div>
-            </div>
-        );
-
-        const ExternalTool = ({ name, url, color }) => (
-            <a href={url} target="_blank" className={`text-xs text-center bg-slate-800 hover:bg-slate-700 py-1 px-3 rounded text-slate-300 border border-slate-700 block transition-colors ${color}`}>{name}</a>
-        );
-
-        const Toast = ({ message, onClose }) => (
-            <div className="fixed bottom-4 right-4 z-50 animate-in fade-in slide-in-from-bottom-4 duration-300">
-                <div className="bg-slate-800 text-white px-4 py-3 rounded-lg shadow-2xl border border-slate-600 flex items-center gap-3">
-                    <div className="bg-green-500/20 p-1 rounded-full"><ClipboardCheck className="w-4 h-4 text-green-400" /></div>
-                    <span className="text-sm font-bold">{message}</span>
-                    <button onClick={onClose} className="ml-2 hover:bg-slate-700 p-1 rounded"><Icon className="w-3 h-3"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></Icon></button>
-                </div>
-            </div>
-        );
-
-        const ConsentModal = ({ onAccept }) => (
-            <div className="fixed inset-0 z-[100] bg-slate-900/95 backdrop-blur-sm flex items-center justify-center p-4">
-                <div className="bg-slate-800 rounded-2xl max-w-lg w-full p-8 border border-slate-700 shadow-2xl relative overflow-hidden">
-                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500"></div>
-                    <ShieldAlert className="w-16 h-16 text-blue-500 mb-6 mx-auto" />
-                    <h2 className="text-2xl font-bold text-white text-center mb-4">Authorized Use Only</h2>
-                    <div className="space-y-4 text-slate-300 text-sm mb-8 bg-slate-900/50 p-6 rounded-xl border border-slate-700/50">
-                        <p>This system is for <b>Authorized MSP Personnel</b> only.</p>
-                        <ul className="list-disc pl-5 space-y-2">
-                            <li>All activities are logged and audited.</li>
-                            <li>Unauthorized access is prohibited and may be prosecuted.</li>
-                            <li>Use of this tool implies acceptance of the Acceptable Use Policy.</li>
-                        </ul>
+                    const InfoItem = ({label, value, icon}) => (
+                    <div className="p-3 bg-slate-800/50 rounded-lg border border-slate-700/50 hover:bg-slate-800 transition-colors">
+                        <div className="flex items-center gap-2 text-slate-400 text-xs uppercase tracking-wider mb-1">{icon}{label}</div>
+                        <div className="text-white font-medium truncate" title={value}>{value || 'Unknown'}</div>
                     </div>
-                    <button onClick={onAccept} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-2 text-lg shadow-lg shadow-blue-900/20">
-                        <ClipboardCheck className="w-5 h-5" /> I Acknowledge & Accept
-                    </button>
-                    <div className="mt-4 text-center text-[10px] text-slate-500 font-mono">SOC2 COMPLIANCE CONTROL SET v2025.1</div>
-                </div>
-            </div>
-        );
+                    );
+
+                    const ExternalTool = ({name, url, color}) => (
+                    <a href={url} target="_blank" className={`text-xs text-center bg-slate-800 hover:bg-slate-700 py-1 px-3 rounded text-slate-300 border border-slate-700 block transition-colors ${color}`}>{name}</a>
+                    );
+
+                    const Toast = ({message, onClose}) => (
+                    <div className="fixed bottom-4 right-4 z-50 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                        <div className="bg-slate-800 text-white px-4 py-3 rounded-lg shadow-2xl border border-slate-600 flex items-center gap-3">
+                            <div className="bg-green-500/20 p-1 rounded-full"><ClipboardCheck className="w-4 h-4 text-green-400" /></div>
+                            <span className="text-sm font-bold">{message}</span>
+                            <button onClick={onClose} className="ml-2 hover:bg-slate-700 p-1 rounded"><Icon className="w-3 h-3"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></Icon></button>
+                        </div>
+                    </div>
+                    );
+
+                    const ConsentModal = ({onAccept}) => (
+                    <div className="fixed inset-0 z-[100] bg-slate-900/95 backdrop-blur-sm flex items-center justify-center p-4">
+                        <div className="bg-slate-800 rounded-2xl max-w-lg w-full p-8 border border-slate-700 shadow-2xl relative overflow-hidden">
+                            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500"></div>
+                            <ShieldAlert className="w-16 h-16 text-blue-500 mb-6 mx-auto" />
+                            <h2 className="text-2xl font-bold text-white text-center mb-4">Authorized Use Only</h2>
+                            <div className="space-y-4 text-slate-300 text-sm mb-8 bg-slate-900/50 p-6 rounded-xl border border-slate-700/50">
+                                <p>This system is for <b>Authorized MSP Personnel</b> only.</p>
+                                <ul className="list-disc pl-5 space-y-2">
+                                    <li>All activities are logged and audited.</li>
+                                    <li>Unauthorized access is prohibited and may be prosecuted.</li>
+                                    <li>Use of this tool implies acceptance of the Acceptable Use Policy.</li>
+                                </ul>
+                            </div>
+                            <button onClick={onAccept} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-2 text-lg shadow-lg shadow-blue-900/20">
+                                <ClipboardCheck className="w-5 h-5" /> I Acknowledge & Accept
+                            </button>
+                            <div className="mt-4 text-center text-[10px] text-slate-500 font-mono">SOC2 COMPLIANCE CONTROL SET v2025.1</div>
+                        </div>
+                    </div>
+                    );
 
         const App = () => {
             const [activeTab, setActiveTab] = useState('single');
-            const [toast, setToast] = useState(null);
+                    const [toast, setToast] = useState(null);
 
-            // SOC2 State
-            const [consentGiven, setConsentGiven] = useState(false);
-            const [privacyMode, setPrivacyMode] = useState(false);
-            const [auditLog, setAuditLog] = useState([]);
+                    // SOC2 State
+                    const [consentGiven, setConsentGiven] = useState(false);
+                    const [privacyMode, setPrivacyMode] = useState(false);
+                    const [auditLog, setAuditLog] = useState([]);
 
             useEffect(() => {
                 const consent = localStorage.getItem('vibe_consent');
-                const privacy = localStorage.getItem('vibe_privacy');
-                if (consent) setConsentGiven(true);
-                if (privacy === 'true') setPrivacyMode(true);
+                    const privacy = localStorage.getItem('vibe_privacy');
+                    if (consent) setConsentGiven(true);
+                    if (privacy === 'true') setPrivacyMode(true);
 
                 window.vibeToast = (msg) => {
-                    setToast(msg);
+                        setToast(msg);
                     setTimeout(() => setToast(null), 3000);
                 };
             }, []);
             const logAction = (action, details) => {
-                const entry = { timestamp: new Date().toISOString(), action, details, user: 'ENGINEER_SESSION' };
+                const entry = {timestamp: new Date().toISOString(), action, details, user: 'ENGINEER_SESSION' };
                 setAuditLog(prev => [...prev, entry]);
             };
 
             const togglePrivacy = () => {
                 const newState = !privacyMode;
-                setPrivacyMode(newState);
-                localStorage.setItem('vibe_privacy', newState);
-                showToast(newState ? "Privacy Mode Enabled" : "Privacy Mode Disabled");
-                logAction("PRIVACY_TOGGLE", `State: ${newState}`);
+                    setPrivacyMode(newState);
+                    localStorage.setItem('vibe_privacy', newState);
+                    showToast(newState ? "Privacy Mode Enabled" : "Privacy Mode Disabled");
+                    logAction("PRIVACY_TOGGLE", `State: ${newState}`);
             };
 
             const acceptConsent = () => {
-                setConsentGiven(true);
-                localStorage.setItem('vibe_consent', 'true');
-                logAction("CONSENT_ACCEPTED", "User acknowledged legal banner");
+                        setConsentGiven(true);
+                    localStorage.setItem('vibe_consent', 'true');
+                    logAction("CONSENT_ACCEPTED", "User acknowledged legal banner");
             };
 
             const exportAuditLog = () => {
-                logAction("AUDIT_EXPORT", "User exported session log");
-                const blob = new Blob([JSON.stringify(auditLog, null, 2)], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `audit_log_session_${new Date().getTime()}.json`;
-                a.click();
-                showToast("Audit Log Exported");
+                        logAction("AUDIT_EXPORT", "User exported session log");
+                    const blob = new Blob([JSON.stringify(auditLog, null, 2)], {type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `audit_log_session_${new Date().getTime()}.json`;
+                    a.click();
+                    showToast("Audit Log Exported");
             };
 
             const showToast = (msg) => {
-                setToast(msg);
+                        setToast(msg);
                 setTimeout(() => setToast(null), 3000);
             };
 
-            const tabs = [
-                { id: 'single', label: 'Target', icon: <Terminal className="w-4 h-4" /> },
-                { id: 'logs', label: 'Logs', icon: <FileText className="w-4 h-4" /> },
-                { id: 'dns', label: 'DNS', icon: <Globe className="w-4 h-4" /> },
-                { id: 'shodan', label: 'Shodan', icon: <Search className="w-4 h-4" /> },
-                { id: 'subnet', label: 'Subnet', icon: <Network className="w-4 h-4" /> },
-                { id: 'mac', label: 'MAC', icon: <Cpu className="w-4 h-4" /> },
-            ];
+                    const tabs = [
+                    {id: 'single', label: 'Target', icon: <Terminal className="w-4 h-4" /> },
+                    {id: 'logs', label: 'Logs', icon: <FileText className="w-4 h-4" /> },
+                    {id: 'dns', label: 'DNS', icon: <Globe className="w-4 h-4" /> },
+                    {id: 'subnet', label: 'Subnet', icon: <Network className="w-4 h-4" /> },
+                    {id: 'mac', label: 'MAC', icon: <Cpu className="w-4 h-4" /> },
+                    ];
 
-            return (
-                <div className="min-h-screen p-4 md:p-8 flex flex-col items-center pb-24">
-                    {!consentGiven && <ConsentModal onAccept={acceptConsent} />}
-                    {toast && <Toast message={toast} onClose={() => setToast(null)} />}
-                    <div className="w-full max-w-6xl mb-8 flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <div className="p-3 bg-blue-600 rounded-lg shadow-lg shadow-blue-500/20"><ShieldAlert className="w-8 h-8 text-white" /></div>
-                            <div>
-                                <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight">IP Vibe Check</h1>
-                                <p className="text-slate-400 text-xs md:text-sm">MSP Security Dashboard v5.0</p>
+                    return (
+                    <div className="min-h-screen p-4 md:p-8 flex flex-col items-center pb-24">
+                        {!consentGiven && <ConsentModal onAccept={acceptConsent} />}
+                        {toast && <Toast message={toast} onClose={() => setToast(null)} />}
+                        <div className="w-full max-w-6xl mb-8 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="p-3 bg-blue-600 rounded-lg shadow-lg shadow-blue-500/20"><ShieldAlert className="w-8 h-8 text-white" /></div>
+                                <div>
+                                    <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight">IP Vibe Check</h1>
+                                    <p className="text-slate-400 text-xs md:text-sm">MSP Security Dashboard v5.0</p>
+                                </div>
+                            </div>
+                            <div className="hidden md:block text-right">
+                                <div className="text-xs text-slate-500 mb-1">ENGINEER STATUS</div>
+                                <div className="text-green-400 font-bold flex items-center gap-2 justify-end">
+                                    <span className="relative flex h-2 w-2"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span><span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span></span>
+                                    ONLINE
+                                </div>
+                                <div className="mt-2 flex gap-2 justify-end">
+                                    <button onClick={togglePrivacy} className={`text-[10px] px-2 py-1 rounded border ${privacyMode ? 'bg-purple-900/50 border-purple-500 text-purple-200' : 'bg-slate-800 border-slate-700 text-slate-500'}`}>
+                                        {privacyMode ? '🕵️ PRIVACY ON' : '👁️ PRIVACY OFF'}
+                                    </button>
+                                    <button onClick={exportAuditLog} className="text-[10px] px-2 py-1 rounded bg-slate-800 border border-slate-700 text-slate-400 hover:text-white">
+                                        📋 EXPORT AUDIT
+                                    </button>
+                                </div>
                             </div>
                         </div>
-                        <div className="hidden md:block text-right">
-                            <div className="text-xs text-slate-500 mb-1">ENGINEER STATUS</div>
-                            <div className="text-green-400 font-bold flex items-center gap-2 justify-end">
-                                <span className="relative flex h-2 w-2"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span><span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span></span>
-                                ONLINE
+
+                        {/* Navigation */}
+                        <div className="bg-slate-900 p-1 rounded-xl border border-slate-700 flex flex-wrap justify-center gap-1 mb-8">
+                            <div className="hidden md:flex items-center gap-3 px-4 border-r border-slate-700 mr-2">
+                                <span className="text-[10px] font-bold text-slate-500 tracking-widest">MODULES</span>
                             </div>
-                            <div className="mt-2 flex gap-2 justify-end">
-                                <button onClick={togglePrivacy} className={`text-[10px] px-2 py-1 rounded border ${privacyMode ? 'bg-purple-900/50 border-purple-500 text-purple-200' : 'bg-slate-800 border-slate-700 text-slate-500'}`}>
-                                    {privacyMode ? '🕵️ PRIVACY ON' : '👁️ PRIVACY OFF'}
+                            {tabs.map(tab => (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => setActiveTab(tab.id)}
+                                    className={`px-4 py-2 rounded-lg text-xs md:text-sm font-bold transition-all border flex items-center gap-2 ${activeTab === tab.id ? 'tab-active' : 'tab-inactive'}`}
+                                >
+                                    {tab.icon} {tab.label}
                                 </button>
-                                <button onClick={exportAuditLog} className="text-[10px] px-2 py-1 rounded bg-slate-800 border border-slate-700 text-slate-400 hover:text-white">
-                                    📋 EXPORT AUDIT
-                                </button>
-                            </div>
+                            ))}
+                        </div>
+
+                        <div className="w-full">
+                            {activeTab === 'single' && <SingleTarget privacyMode={privacyMode} />}
+                            {activeTab === 'logs' && <LogAnalyzer />}
+                            {activeTab === 'dns' && <DNSSupertool />}
+                            {activeTab === 'subnet' && <SubnetCalc />}
+                            {activeTab === 'mac' && <MacLookup />}
+                        </div>
+
+                        <div className="mt-12 pt-6 border-t border-slate-800 text-center text-[10px] text-slate-600 font-mono">
+                            <p className="mb-2">SYSTEM INTEGRITY CHECK: <span className="text-green-900 bg-green-900/10 px-1 rounded">VERIFIED</span></p>
+                            <p>BUILD_HASH: 7a9f8b4c2d1e | COMPLIANCE: SOC2_TYPE_II</p>
                         </div>
                     </div>
-
-                    {/* Navigation */}
-                    <div className="bg-slate-900 p-1 rounded-xl border border-slate-700 flex flex-wrap justify-center gap-1 mb-8">
-                        <div className="hidden md:flex items-center gap-3 px-4 border-r border-slate-700 mr-2">
-                            <span className="text-[10px] font-bold text-slate-500 tracking-widest">MODULES</span>
-                        </div>
-                        {tabs.map(tab => (
-                            <button
-                                key={tab.id}
-                                onClick={() => setActiveTab(tab.id)}
-                                className={`px-4 py-2 rounded-lg text-xs md:text-sm font-bold transition-all border flex items-center gap-2 ${activeTab === tab.id ? 'tab-active' : 'tab-inactive'}`}
-                            >
-                                {tab.icon} {tab.label}
-                            </button>
-                        ))}
-                    </div>
-
-                    <div className="w-full">
-                        {activeTab === 'single' && <SingleTarget privacyMode={privacyMode} />}
-                        {activeTab === 'logs' && <LogAnalyzer />}
-                        {activeTab === 'dns' && <DNSSupertool />}
-                        {activeTab === 'shodan' && <ShodanIntel />}
-                        {activeTab === 'subnet' && <SubnetCalc />}
-                        {activeTab === 'mac' && <MacLookup />}
-                    </div>
-
-                    <div className="mt-12 pt-6 border-t border-slate-800 text-center text-[10px] text-slate-600 font-mono">
-                        <p className="mb-2">SYSTEM INTEGRITY CHECK: <span className="text-green-900 bg-green-900/10 px-1 rounded">VERIFIED</span></p>
-                        <p>BUILD_HASH: 7a9f8b4c2d1e | COMPLIANCE: SOC2_TYPE_II</p>
-                    </div>
-                </div>
-            );
+                    );
         };
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
+                    const root = ReactDOM.createRoot(document.getElementById('root'));
+                    root.render(<App />);
     </script>
 </body>
 
