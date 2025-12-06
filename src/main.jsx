@@ -3,9 +3,6 @@ import ReactDOM from 'react-dom/client'
 import App from './App.jsx'
 import './index.css'
 
-console.log('VITE: Script Execution Started');
-// window.alert('VITE: Script Execution Started'); // Uncomment if console is inaccessible
-
 const mount = () => {
     const root = document.getElementById('root');
     if (!root) {
