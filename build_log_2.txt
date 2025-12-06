@@ -1,0 +1,19 @@
+
+> ip-vibe-check@5.0.0 build
+> vite build
+
+[36mvite v5.4.21 [32mbuilding for production...[36m[39m
+transforming...
+[32mΓ£ô[39m 2281 modules transformed.
+x Build failed in 3.87s
+error during build:
+Invalid value for option "output.manualChunks" - this option is not supported for "output.inlineDynamicImports".
+    at getRollupError (file:///C:/Users/RyanMudge/OneDrive%20-%20MunkyDuck/Documents/GitHub/IPVibeCheck/IPVibeCheck/node_modules/rollup/dist/es/shared/parseAst.js:401:41)
+    at error (file:///C:/Users/RyanMudge/OneDrive%20-%20MunkyDuck/Documents/GitHub/IPVibeCheck/IPVibeCheck/node_modules/rollup/dist/es/shared/parseAst.js:397:42)
+    at getManualChunks (file:///C:/Users/RyanMudge/OneDrive%20-%20MunkyDuck/Documents/GitHub/IPVibeCheck/IPVibeCheck/node_modules/rollup/dist/es/shared/node-entry.js:23287:20)
+    at normalizeOutputOptions (file:///C:/Users/RyanMudge/OneDrive%20-%20MunkyDuck/Documents/GitHub/IPVibeCheck/IPVibeCheck/node_modules/rollup/dist/es/shared/node-entry.js:23074:23)
+    at getOutputOptions (file:///C:/Users/RyanMudge/OneDrive%20-%20MunkyDuck/Documents/GitHub/IPVibeCheck/IPVibeCheck/node_modules/rollup/dist/es/shared/node-entry.js:23464:12)
+    at getOutputOptionsAndPluginDriver (file:///C:/Users/RyanMudge/OneDrive%20-%20MunkyDuck/Documents/GitHub/IPVibeCheck/IPVibeCheck/node_modules/rollup/dist/es/shared/node-entry.js:23459:19)
+    at async handleGenerateWrite (file:///C:/Users/RyanMudge/OneDrive%20-%20MunkyDuck/Documents/GitHub/IPVibeCheck/IPVibeCheck/node_modules/rollup/dist/es/shared/node-entry.js:23435:74)
+    at async build (file:///C:/Users/RyanMudge/OneDrive%20-%20MunkyDuck/Documents/GitHub/IPVibeCheck/IPVibeCheck/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:65715:16)
+    at async CAC.<anonymous> (file:///C:/Users/RyanMudge/OneDrive%20-%20MunkyDuck/Documents/GitHub/IPVibeCheck/IPVibeCheck/node_modules/vite/dist/node/cli.js:829:5)
