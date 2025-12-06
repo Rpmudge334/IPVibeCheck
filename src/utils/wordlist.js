@@ -1,0 +1,21 @@
+export const WORD_LIST = [
+    "tree", "bird", "sand", "blue", "walk", "moon", "star", "fish", "gold", "pink",
+    "leaf", "cake", "ball", "kite", "lion", "duck", "wolf", "goat", "road", "ship",
+    "snow", "rain", "wind", "fire", "cool", "warm", "rock", "dust", "salt", "lime",
+    "pear", "kiwi", "corn", "rice", "bean", "soup", "milk", "soda", "book", "desk",
+    "lamp", "door", "wall", "roof", "yard", "park", "lake", "hill", "frog", "toad",
+    "bear", "deer", "crow", "hawk", "swan", "crab", "clam", "seal", "mole", "mouse",
+    "hand", "foot", "head", "face", "nose", "eyes", "ears", "hair", "neck", "chin",
+    "coat", "shoe", "sock", "vest", "belt", "hats", "ring", "wand", "cards", "dice",
+    "play", "jump", "sing", "read", "swim", "bike", "hike", "cook", "chef", "cafe",
+    "food", "mint", "herb", "sage", "rose", "lily", "fern", "moss", "tree", "bush",
+    "wood", "iron", "silk", "wool", "clay", "jade", "onyx", "ruby", "opal", "mica",
+    "zero", "four", "five", "nine", "tens", "plus", "math", "test", "pass", "fail",
+    "good", "kind", "safe", "calm", "neat", "tidy", "pure", "holy", "wise", "bold",
+    "fast", "slow", "hard", "soft", "loud", "deep", "high", "wide", "long", "tall",
+    "time", "year", "week", "date", "hour", "zone", "east", "west", "maps", "plan",
+    "idea", "hope", "love", "wish", "luck", "fate", "soul", "mind", "life", "live",
+    "work", "rest", "team", "boss", "cash", "save", "bank", "coin", "bill", "cost",
+    "sale", "shop", "buy", "sell", "deal", "free", "gift", "card", "note", "list",
+    "copy", "file", "disk", "code", "data", "link", "site", "web", "net", "app"
+];
