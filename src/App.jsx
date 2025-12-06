@@ -10,6 +10,7 @@ import PasswordGen from './components/PasswordGen';
 import DomainAge from './components/DomainAge';
 import EmailVisualizer from './components/EmailVisualizer';
 import ThreeCXTools from './components/ThreeCXTools';
+import TicketScribe from './components/TicketScribe';
 import ConsentModal from './components/shared/ConsentModal';
 import Toast from './components/shared/Toast';
 
@@ -122,6 +123,7 @@ function App() {
                 {activeTab === 'pass' && <PasswordGen {...globalProps} />}
                 {activeTab === 'whois' && <DomainAge {...globalProps} />}
                 {activeTab === 'email' && <EmailVisualizer {...globalProps} />}
+                {activeTab === 'scribe' && <TicketScribe {...globalProps} />}
             </div>
 
             {/* Footer */}
