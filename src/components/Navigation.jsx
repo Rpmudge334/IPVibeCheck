@@ -1,10 +1,11 @@
 import React from 'react';
-import { Terminal, FileText, Globe, Network, Cpu, KeyRound, Calendar, Mail } from 'lucide-react';
+import { Terminal, FileText, Globe, Network, Cpu, KeyRound, Calendar, Mail, Phone } from 'lucide-react';
 
 const Navigation = ({ activeTab, setActiveTab }) => {
     const tabs = [
         { id: 'single', label: 'Target', icon: <Terminal className="w-4 h-4" /> },
         { id: 'logs', label: 'Logs', icon: <FileText className="w-4 h-4" /> },
+        { id: '3cx', label: '3CX', icon: <Phone className="w-4 h-4" /> },
         { id: 'dns', label: 'DNS', icon: <Globe className="w-4 h-4" /> },
         { id: 'subnet', label: 'Subnet', icon: <Network className="w-4 h-4" /> },
         { id: 'mac', label: 'MAC', icon: <Cpu className="w-4 h-4" /> },

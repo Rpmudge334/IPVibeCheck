@@ -9,6 +9,7 @@ import MacLookup from './components/MacLookup';
 import PasswordGen from './components/PasswordGen';
 import DomainAge from './components/DomainAge';
 import EmailVisualizer from './components/EmailVisualizer';
+import ThreeCXTools from './components/ThreeCXTools';
 import ConsentModal from './components/shared/ConsentModal';
 import Toast from './components/shared/Toast';
 
