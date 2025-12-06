@@ -16,6 +16,7 @@ export default defineConfig({
     ],
     build: {
         outDir: 'docs',
+        emptyOutDir: false,
         target: "es2015",
         assetsInlineLimit: 100000000,
         chunkSizeWarningLimit: 100000000,
