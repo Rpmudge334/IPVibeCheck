@@ -115,6 +115,7 @@ function App() {
             <div className="w-full">
                 {activeTab === 'single' && <SingleTarget {...globalProps} />}
                 {activeTab === 'logs' && <LogAnalyzer {...globalProps} />}
+                {activeTab === '3cx' && <ThreeCXTools {...globalProps} />}
                 {activeTab === 'dns' && <DNSSupertool {...globalProps} />}
                 {activeTab === 'subnet' && <SubnetCalc {...globalProps} />}
                 {activeTab === 'mac' && <MacLookup {...globalProps} />}
