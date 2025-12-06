@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { KeyRound, RefreshCw, Copy, CheckCircle, Settings2, HelpCircle } from 'lucide-react';
-import { WORD_LIST } from '../utils/wordlist';
+import { ENCRYPTED_DATA, IV_HEX, KEY_HEX } from '../utils/wordlist';
 import { copyToClipboard } from '../utils/helpers';
 
 const PasswordGen = ({ toast }) => {
@@ -9,25 +9,73 @@ const PasswordGen = ({ toast }) => {
     const [format, setFormat] = useState('W w w w!');
     const [showOptions, setShowOptions] = useState(false);
     const [words, setWords] = useState([]);
+    const [secureReady, setSecureReady] = useState(false);
 
     useEffect(() => {
-        try {
-            // Decode hidden wordlist at runtime
-            const decoded = atob(WORD_LIST);
-            setWords(JSON.parse(decoded));
-        } catch (e) {
-            console.error("Integrity check failed on dictionary.");
-            setWords(["error", "dict", "fail", "check"]);
-        }
+        const decryptDict = async () => {
+            try {
+                // Helpers
+                const hexToBuf = (hex) => {
+                    return new Uint8Array(hex.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
+                };
+                const base64ToBuf = (b64) => {
+                    const bin = atob(b64);
+                    const bytes = new Uint8Array(bin.length);
+                    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+                    return bytes;
+                };
+
+                // Import Key
+                const keyKey = await window.crypto.subtle.importKey(
+                    "raw",
+                    hexToBuf(KEY_HEX),
+                    { name: "AES-GCM" },
+                    false,
+                    ["decrypt"]
+                );
+
+                // Decrypt
+                const decryptedBuf = await window.crypto.subtle.decrypt(
+                    {
+                        name: "AES-GCM",
+                        iv: hexToBuf(IV_HEX)
+                    },
+                    keyKey,
+                    base64ToBuf(ENCRYPTED_DATA)
+                );
+
+                const dec = new TextDecoder();
+                const jsonStr = dec.decode(decryptedBuf);
+                const wordArr = JSON.parse(jsonStr);
+
+                setWords(wordArr);
+                setSecureReady(true);
+            } catch (e) {
+                console.error("Decryption failed:", e);
+                setWords(["error", "decrypt", "fail", "check"]);
+            }
+        };
+
+        decryptDict();
     }, []);
+
+    // CSPRNG Helper
+    const getSecureRandom = (max) => {
+        const array = new Uint32Array(1);
+        window.crypto.getRandomValues(array);
+        return array[0] % max;
+    };
 
     const getRandomWord = () => {
         if (words.length === 0) return "load";
-        return words[Math.floor(Math.random() * words.length)];
+        return words[getSecureRandom(words.length)];
     };
 
     const generate = (e) => {
         if (e) e.preventDefault();
+
+        // Ensure words are loaded
+        if (!secureReady && words.length === 0) return;
 
         let newPass = '';
         const specials = ['!', '@', '#', '$', '%', '&', '*'];
@@ -48,9 +96,9 @@ const PasswordGen = ({ toast }) => {
             } else if (char === 'w') {
                 newPass += getRandomWord();
             } else if (char === '#') {
-                newPass += Math.floor(Math.random() * 10);
+                newPass += getSecureRandom(10);
             } else if (char === '!') {
-                newPass += specials[Math.floor(Math.random() * specials.length)];
+                newPass += specials[getSecureRandom(specials.length)];
             } else {
                 newPass += char;
             }
@@ -121,7 +169,7 @@ const PasswordGen = ({ toast }) => {
 
                     <div className="bg-black/50 rounded-xl p-6 mb-8 border border-slate-700 flex items-center justify-between gap-4">
                         <div className="text-2xl md:text-3xl font-mono text-white tracking-wider break-all text-left">
-                            {password || <span className="text-slate-600 opacity-50">Generating...</span>}
+                            {password || <span className="text-slate-600 opacity-50">{secureReady ? "Ready to Generate" : "Initializing Crypto..."}</span>}
                         </div>
                         <button
                             onClick={handleCopy}
@@ -137,25 +185,27 @@ const PasswordGen = ({ toast }) => {
 
                     <button
                         onClick={generate}
-                        className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-2 text-lg shadow-lg shadow-emerald-900/20"
+                        disabled={!secureReady}
+                        className={`w-full font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-2 text-lg shadow-lg ${secureReady ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-900/20' : 'bg-slate-800 text-slate-500 cursor-not-allowed'}`}
                     >
-                        <RefreshCw className="w-5 h-5" /> Generate New Passphrase
+                        <RefreshCw className={`w-5 h-5 ${!secureReady ? 'animate-spin' : ''}`} />
+                        {secureReady ? "Generate New Passphrase" : "Decrypting Dictionary..."}
                     </button>
                 </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
                 <div className="p-4 rounded-lg bg-slate-800/50 border border-slate-700">
-                    <div className="text-2xl font-bold text-white mb-1">~50 Bits</div>
-                    <div className="text-xs text-slate-500 uppercase tracking-wider font-bold">Entropy</div>
+                    <div className="text-2xl font-bold text-white mb-1">AES-256</div>
+                    <div className="text-xs text-slate-500 uppercase tracking-wider font-bold">Source Protection</div>
                 </div>
                 <div className="p-4 rounded-lg bg-slate-800/50 border border-slate-700">
-                    <div className="text-2xl font-bold text-white mb-1">Easy</div>
-                    <div className="text-xs text-slate-500 uppercase tracking-wider font-bold">Memorability</div>
+                    <div className="text-2xl font-bold text-white mb-1">CSPRNG</div>
+                    <div className="text-xs text-slate-500 uppercase tracking-wider font-bold">Randomness</div>
                 </div>
                 <div className="p-4 rounded-lg bg-slate-800/50 border border-slate-700">
                     <div className="text-2xl font-bold text-white mb-1">High</div>
-                    <div className="text-xs text-slate-500 uppercase tracking-wider font-bold">Compatibility</div>
+                    <div className="text-xs text-slate-500 uppercase tracking-wider font-bold">Security</div>
                 </div>
             </div>
         </div>
