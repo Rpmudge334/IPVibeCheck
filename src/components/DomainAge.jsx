@@ -15,52 +15,67 @@ const DomainAge = () => {
         setLoading(true); setResult(null); setError(null);
 
         const domain = input.trim().replace(/(^\w+:|^)\/\//, '').split('/')[0];
+        let creationDate = null;
+        let source = 'Unknown';
+        let risk = 'Unknown';
+        let soaDate = null;
 
         try {
-            // Strategy 1: Google DNS SOA Serial Heuristic
-            // Many SOA serials are in YYYYMMDDxx format.
-            const dnsRes = await fetch(`https://dns.google/resolve?name=${domain}&type=SOA`);
-            const dnsJson = await dnsRes.json();
+            // Strategy 1: Try RDAP (Best Data)
+            try {
+                const rdapRes = await fetch(`https://rdap.org/domain/${domain}`);
+                if (rdapRes.ok) {
+                    const rdapJson = await rdapRes.json();
 
-            let soaDate = null;
-            let creationDate = null;
-            let source = 'Unknown';
-            let risk = 'Unknown';
+                    // Parse RDAP Events
+                    if (rdapJson.events) {
+                        const regEvent = rdapJson.events.find(e => e.eventAction === 'registration');
+                        if (regEvent) {
+                            creationDate = regEvent.eventDate.split('T')[0];
+                            source = 'RDAP (Official)';
+                        }
+                    }
+                }
+            } catch (rdapErr) {
+                console.warn("RDAP lookup failed, falling back to heuristic", rdapErr);
+            }
 
-            if (dnsJson.Answer && dnsJson.Answer.length > 0) {
-                const soaData = dnsJson.Answer[0].data;
-                const parts = soaData.split(' ');
-                // Serial is usually the 3rd field
-                const serial = parts[2];
-                // Check if it looks like YYYYMMDDxx
-                if (/^20\d{6}\d{2}$/.test(serial)) {
-                    const year = parseInt(serial.substring(0, 4));
-                    const month = parseInt(serial.substring(4, 6)) - 1;
-                    const day = parseInt(serial.substring(6, 8));
-                    soaDate = new Date(year, month, day);
-                    if (!isNaN(soaDate.getTime())) {
-                        source = 'SOA Serial (Heuristic)';
-                        // SOA serial is often LAST UPDATE, not creation. 
-                        // But for recent domains, last update is close to creation.
+            // Strategy 2: Google DNS SOA Serial Heuristic (Fallback)
+            if (!creationDate) {
+                const dnsRes = await fetch(`https://dns.google/resolve?name=${domain}&type=SOA`);
+                const dnsJson = await dnsRes.json();
+
+                if (dnsJson.Answer && dnsJson.Answer.length > 0) {
+                    const soaData = dnsJson.Answer[0].data;
+                    const parts = soaData.split(' ');
+                    const serial = parts[2];
+
+                    // Check if it looks like YYYYMMDDxx
+                    if (/^20\d{6}\d{2}$/.test(serial)) {
+                        const year = parseInt(serial.substring(0, 4));
+                        const month = parseInt(serial.substring(4, 6)) - 1;
+                        const day = parseInt(serial.substring(6, 8));
+                        soaDate = new Date(year, month, day);
+                        if (!isNaN(soaDate.getTime())) {
+                            source = 'SOA Serial (Heuristic)';
+                            creationDate = soaDate.toISOString().split('T')[0];
+                        }
                     }
                 }
             }
 
-            // Strategy 2: RDAP (Will likely fail CORS on many TLDs, but try generic)
-            // Note: Implementing full RDAP client client-side is heavy. 
-            // We'll rely on the SOA heuristic or external link for now as per plan.
-
-            // Analyze Logic
+            // Analyze Risk (Logic)
             let ageDays = null;
-            if (soaDate) {
+            let refDate = creationDate ? new Date(creationDate) : null;
+
+            if (refDate && !isNaN(refDate.getTime())) {
                 const now = new Date();
-                const diffTime = Math.abs(now - soaDate);
+                const diffTime = Math.abs(now - refDate);
                 ageDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
                 if (ageDays < 30) risk = 'High';
                 else if (ageDays < 90) risk = 'Medium';
                 else risk = 'Low';
-                creationDate = soaDate.toISOString().split('T')[0];
             }
 
             setResult({
@@ -72,7 +87,9 @@ const DomainAge = () => {
             });
 
         } catch (err) {
-            setError(err.message);
+            setError(err.message || "Lookup failed");
+            // If we have partial result, show it?
+            // For now, simple error.
         } finally {
             setLoading(false);
         }
