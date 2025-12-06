@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Globe, Calendar, AlertTriangle, ShieldCheck, ExternalLink } from 'lucide-react';
+import { Search, Globe, Calendar, AlertTriangle, ShieldCheck, ExternalLink, Server } from 'lucide-react';
 import InfoItem from './shared/InfoItem';
 import ExternalTool from './shared/ExternalTool';
 
