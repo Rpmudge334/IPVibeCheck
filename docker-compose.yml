@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    container_name: ipvibe-app
+    restart: unless-stopped
+    expose:
+      - "80"
+    ports:
+      - "8080:80"  # Optional: For local access at localhost:8080
+    networks:
+      - tunnel-net
+
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    container_name: ipvibe-tunnel
+    restart: unless-stopped
+    command: tunnel run
+    environment:
+      - TUNNEL_TOKEN=${TUNNEL_TOKEN}
+    networks:
+      - tunnel-net
+    depends_on:
+      - app
+
+networks:
+  tunnel-net:
+    driver: bridge
