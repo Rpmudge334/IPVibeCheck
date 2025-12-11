@@ -4,11 +4,11 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>IP Vibe Check // MSP God Mode</title>
+    <title>Mithril // Silverline OPS</title>
     <style>
         body {
             margin: 0;
-            background-color: #0f172a;
+            background-color: #020617; /* Slate-950 */
             color: #e2e8f0;
             font-family: monospace;
         }
@@ -18,7 +18,7 @@
         }
 
         ::-webkit-scrollbar-track {
-            background: #1e293b;
+            background: #0f172a;
         }
 
         ::-webkit-scrollbar-thumb {
@@ -42,51 +42,6 @@
                 document.body.innerHTML += '<div style="color:orange;background:black;padding:20px;z-index:9999;position:fixed;bottom:0;left:0;width:100%;font-family:monospace;white-space:pre-wrap;">' + errorMsg + '</div>';
             } else {
                 alert(errorMsg);
-            }
-< !doctype html >
-                <html lang="en">
-
-                    <head>
-                        <meta charset="UTF-8" />
-                        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-                        <title>IP Vibe Check // MSP God Mode</title>
-                        <style>
-                            body {
-                                margin: 0;
-                            background-color: #0f172a;
-                            color: #e2e8f0;
-                            font-family: monospace;
-        }
-
-                            ::-webkit-scrollbar {
-                                width: 8px;
-        }
-
-                            ::-webkit-scrollbar-track {
-                                background: #1e293b;
-        }
-
-                            ::-webkit-scrollbar-thumb {
-                                background: #334155;
-                            border-radius: 4px;
-        }
-                        </style>
-                        <script>
-                            window.onerror = function (msg, url, line, col, error) {
-            var errorMsg = 'GLOBAL ERROR:\n' + msg + '\nLine: ' + line + ':' + col + '\n' + (error ? error.stack : '');
-                            if (document.body) {
-                                document.body.innerHTML += '<div style="color:red;background:black;padding:20px;z-index:9999;position:fixed;top:0;left:0;width:100%;font-family:monospace;white-space:pre-wrap;">' + errorMsg + '</div>';
-            } else {
-                                alert(errorMsg);
-            }
-                            return false;
-        };
-                            window.addEventListener('unhandledrejection', function (event) {
-            var errorMsg = 'PROMISE REJECTION:\n' + event.reason;
-                            if (document.body) {
-                                document.body.innerHTML += '<div style="color:orange;background:black;padding:20px;z-index:9999;position:fixed;bottom:0;left:0;width:100%;font-family:monospace;white-space:pre-wrap;">' + errorMsg + '</div>';
-            } else {
-                                alert(errorMsg);
             }
         });
     </script>

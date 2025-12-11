@@ -1,255 +1,142 @@
-import React, { useState, useEffect } from 'react';
-import { KeyRound, RefreshCw, Copy, CheckCircle, Settings2, HelpCircle } from 'lucide-react';
-import { ENCRYPTED_DATA, IV_HEX, KEY_HEX } from '../utils/wordlist';
-import { copyToClipboard } from '../utils/helpers';
+import React, { useState } from 'react';
+import { Copy, RefreshCw, Wand2 } from 'lucide-react';
 
-const PasswordGen = ({ toast }) => {
-    const [password, setPassword] = useState('');
-    const [copied, setCopied] = useState(false);
-    const [format, setFormat] = useState('W w w w!');
-    const [wordLength, setWordLength] = useState('mixed'); // 'mixed', 'short', 'long'
-    const [showOptions, setShowOptions] = useState(false);
-    const [words, setWords] = useState([]);
-    const [secureReady, setSecureReady] = useState(false);
+// Word lists for "Wwww" generation
+const WORDS = [
+    "fire", "wind", "snow", "rain", "mist", "dawn", "dusk", "star", "moon", "sun",
+    "tree", "lead", "iron", "gold", "ruby", "opal", "onyx", "jade", "cyan", "teal",
+    "blue", "grey", "lime", "rose", "sage", "pine", "palm", "oak", "elm", "ash",
+    "bird", "wolf", "bear", "lion", "hawk", "crow", "dove", "swan", "fish", "seal",
+    "ship", "sail", "mast", "helm", "deck", "rope", "knot", "flag", "map", "key",
+    "door", "gate", "wall", "room", "hall", "roof", "step", "path", "road", "way",
+    "fast", "slow", "loud", "soft", "high", "deep", "dark", "warm", "cool", "calm",
+    "safe", "wise", "kind", "true", "brave", "wild", "free"
+];
 
-    useEffect(() => {
-        const decryptDict = async () => {
-            try {
-                // Helpers
-                const hexToBuf = (hex) => {
-                    return new Uint8Array(hex.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
-                };
-                const base64ToBuf = (b64) => {
-                    const bin = atob(b64);
-                    const bytes = new Uint8Array(bin.length);
-                    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-                    return bytes;
-                };
+const SPECIALS = "!@#$%^&*()_+-=[]{}|;:,.<>?";
 
-                // Import Key
-                const keyKey = await window.crypto.subtle.importKey(
-                    "raw",
-                    hexToBuf(KEY_HEX),
-                    { name: "AES-GCM" },
-                    false,
-                    ["decrypt"]
-                );
+const generateFromTemplate = (template) => {
+    let result = "";
 
-                // Decrypt
-                const decryptedBuf = await window.crypto.subtle.decrypt(
-                    {
-                        name: "AES-GCM",
-                        iv: hexToBuf(IV_HEX)
-                    },
-                    keyKey,
-                    base64ToBuf(ENCRYPTED_DATA)
-                );
+    // Simple parser: iterate through chars, if token match, consume token and generate
+    // But user format is just "Wwww", "wwww", "####", etc.
+    // It's easier to iterate char by char if they are single char tokens, but "Wwww" is a 4-char concept.
+    // Actually, user said: "Wwww = W for word, capitalized first letter, 3 lower case letters"
+    // So "Wwww" is a specific token.
 
-                const dec = new TextDecoder();
-                const jsonStr = dec.decode(decryptedBuf);
-                const wordArr = JSON.parse(jsonStr);
+    // We can regex replace the known tokens.
+    // Order matters (longest first)
 
-                setWords(wordArr);
-                setSecureReady(true);
-            } catch (e) {
-                console.error("Decryption failed:", e);
-                setWords(["error", "decrypt", "fail", "check"]);
-            }
-        };
+    let generated = template;
 
-        decryptDict();
-    }, []);
+    // 1. "Wwww" -> Capitalized 4-letter Word
+    // We use a replacer function to allow multiple distinct words
+    generated = generated.replace(/Wwww/g, () => {
+        const word = WORDS[Math.floor(Math.random() * WORDS.length)];
+        return word.charAt(0).toUpperCase() + word.slice(1);
+    });
 
-    // CSPRNG Helper
-    const getSecureRandom = (max) => {
-        const array = new Uint32Array(1);
-        window.crypto.getRandomValues(array);
-        return array[0] % max;
+    // 2. "wwww" -> Lowercase 4-letter Word
+    generated = generated.replace(/wwww/g, () => {
+        return WORDS[Math.floor(Math.random() * WORDS.length)];
+    });
+
+    // 3. "Aaaa" -> Capitalized Random Letter + 3 Random Lowercase
+    generated = generated.replace(/Aaaa/g, () => {
+        const chars = "abcdefghijklmnopqrstuvwxyz";
+        const cap = chars[Math.floor(Math.random() * chars.length)].toUpperCase();
+        const tail = Array(3).fill(0).map(() => chars[Math.floor(Math.random() * chars.length)]).join('');
+        return cap + tail;
+    });
+
+    // 4. "####" -> 4 Random Numbers
+    generated = generated.replace(/####/g, () => {
+        return Math.floor(1000 + Math.random() * 9000).toString();
+    });
+
+    // 5. "****" -> 4 Random Specials
+    generated = generated.replace(/\*\*\*\*/g, () => {
+        return Array(4).fill(0).map(() => SPECIALS[Math.floor(Math.random() * SPECIALS.length)]).join('');
+    });
+
+    // 6. Single "#" -> 1 Random Number
+    generated = generated.replace(/#/g, () => {
+        return Math.floor(Math.random() * 10).toString();
+    });
+
+    // 7. Single "*" -> 1 Random Special
+    generated = generated.replace(/\*/g, () => {
+        return SPECIALS[Math.floor(Math.random() * SPECIALS.length)];
+    });
+
+    return generated;
+};
+
+export default function PasswordGen() {
+    const [template, setTemplate] = useState("Wwww wwww wwww wwww*");
+    const [history, setHistory] = useState([]);
+
+    const handleGenerate = () => {
+        const newPwd = generateFromTemplate(template);
+        setHistory(prev => [newPwd, ...prev].slice(0, 10)); // Keep last 10
     };
 
-    const getRandomWord = () => {
-        if (words.length === 0) return "load";
-
-        // Filter Logic
-        let pool = words;
-        if (wordLength === 'short') pool = words.filter(w => w.length <= 5);
-        if (wordLength === 'long') pool = words.filter(w => w.length >= 6);
-
-        // Fallback if pool is empty (shouldn't happen with mixed list)
-        if (pool.length === 0) pool = words;
-
-        return pool[getSecureRandom(pool.length)];
-    };
-
-    const generate = (e) => {
-        if (e) e.preventDefault();
-
-        // Ensure words are loaded
-        if (!secureReady && words.length === 0) return;
-
-        let newPass = '';
-        const specials = ['!', '@', '#', '$', '%', '&', '*'];
-
-        // Token Parser:
-        // W = Capitalized Word
-        // w = Lowercase Word
-        // # = Random Digit
-        // ! = Random Special
-        // Any other char is literals
-
-        for (let i = 0; i < format.length; i++) {
-            const char = format[i];
-
-            if (char === 'W') {
-                const w = getRandomWord();
-                newPass += w.charAt(0).toUpperCase() + w.slice(1);
-            } else if (char === 'w') {
-                newPass += getRandomWord();
-            } else if (char === '#') {
-                newPass += getSecureRandom(10);
-            } else if (char === '!') {
-                newPass += specials[getSecureRandom(specials.length)];
-            } else {
-                newPass += char;
-            }
-        }
-
-        setPassword(newPass);
-        setCopied(false);
-    };
-
-    const handleCopy = () => {
-        if (!password) return;
-        copyToClipboard(password, toast);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
+    const copyToClipboard = (text) => {
+        navigator.clipboard.writeText(text);
     };
 
     return (
-        <div className="max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="relative group mb-8">
-                <div className="absolute -inset-0.5 bg-gradient-to-r from-emerald-600 to-green-500 rounded-xl blur opacity-30 group-hover:opacity-75 transition duration-1000"></div>
-                <div className="relative bg-slate-900 rounded-xl p-8 border border-slate-700 text-center">
-                    <div className="flex justify-center mb-6">
-                        <div className="p-4 bg-emerald-900/30 rounded-full border border-emerald-500/30">
-                            <KeyRound className="w-12 h-12 text-emerald-400" />
-                        </div>
-                    </div>
+        <div className="flex flex-col h-full bg-slate-950/20 backdrop-blur-2xl text-slate-200">
+            {/* Controls */}
+            <div className="p-4 border-b border-white/5 flex flex-col gap-4">
 
-                    <h2 className="text-xl font-bold text-white mb-2">Secure Passphrase Generator</h2>
-
-                    <button
-                        onClick={() => setShowOptions(!showOptions)}
-                        className="text-slate-400 text-xs mb-8 flex items-center justify-center gap-1 hover:text-emerald-400 transition-colors mx-auto"
-                    >
-                        <Settings2 className="w-3 h-3" />
-                        {showOptions ? "Hide Options" : "Customize Format"}
-                    </button>
-
-                    {showOptions && (
-                        <div className="mb-8 p-4 bg-slate-800/50 rounded-lg border border-slate-700 animate-in fade-in slide-in-from-top-2">
-                            <div className="flex flex-col items-center gap-4">
-
-                                {/* Format Input */}
-                                <div className="space-y-2">
-                                    <label className="text-xs font-bold text-slate-400 uppercase tracking-widest block">Format String</label>
-                                    <div className="flex items-center gap-2 w-full max-w-xs justify-center">
-                                        <input
-                                            type="text"
-                                            value={format}
-                                            onChange={(e) => setFormat(e.target.value)}
-                                            className="w-48 bg-slate-950 border border-slate-600 rounded px-3 py-2 text-center font-mono text-emerald-400 focus:outline-none focus:border-emerald-500"
-                                            placeholder="W w w w!"
-                                        />
-                                        <div className="group relative">
-                                            <HelpCircle className="w-4 h-4 text-slate-500 cursor-help" />
-                                            <div className="hidden group-hover:block absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-48 p-2 bg-black border border-slate-700 rounded text-[10px] text-slate-300 z-20">
-                                                <b>Tokens:</b><br />
-                                                W = Capital Word<br />
-                                                w = Lower Word<br />
-                                                # = Digit (0-9)<br />
-                                                ! = Symbol<br />
-                                                Other chars stay (e.g. -)
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Length Selector */}
-                                <div className="space-y-2">
-                                    <label className="text-xs font-bold text-slate-400 uppercase tracking-widest block">Word Length</label>
-                                    <div className="flex gap-2">
-                                        <button
-                                            onClick={() => setWordLength('mixed')}
-                                            className={`px-3 py-1 rounded text-xs font-bold transition-all ${wordLength === 'mixed' ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}
-                                        >
-                                            Mixed
-                                        </button>
-                                        <button
-                                            onClick={() => setWordLength('short')}
-                                            className={`px-3 py-1 rounded text-xs font-bold transition-all ${wordLength === 'short' ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}
-                                        >
-                                            Short (3-5)
-                                        </button>
-                                        <button
-                                            onClick={() => setWordLength('long')}
-                                            className={`px-3 py-1 rounded text-xs font-bold transition-all ${wordLength === 'long' ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}
-                                        >
-                                            Long (6+)
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div className="mt-2 text-[10px] text-slate-500">
-                                    Def: <span className="font-mono text-slate-400">W w w w!</span> &rarr; "Horse battery staple correct@"
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    <div className="bg-black/50 rounded-xl p-6 mb-8 border border-slate-700 flex items-center justify-between gap-4">
-                        <div className="text-2xl md:text-3xl font-mono text-white tracking-wider break-all text-left">
-                            {password || <span className="text-slate-600 opacity-50">{secureReady ? "Ready to Generate" : "Initializing Crypto..."}</span>}
-                        </div>
+                <div className="flex flex-col gap-1">
+                    <label className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Template</label>
+                    <div className="flex gap-2">
+                        <input
+                            value={template}
+                            onChange={(e) => setTemplate(e.target.value)}
+                            className="flex-1 bg-slate-900/50 border border-slate-700 rounded px-3 py-2 font-mono text-sm focus:border-mithril-500 focus:outline-none transition-colors"
+                        />
                         <button
-                            onClick={handleCopy}
-                            disabled={!password}
-                            className={`p-3 rounded-lg transition-all ${copied
-                                ? 'bg-green-500 text-white'
-                                : 'bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700'
-                                }`}
+                            onClick={handleGenerate}
+                            className="bg-mithril-600 hover:bg-mithril-500 text-white px-4 py-2 rounded flex items-center gap-2 transition-colors font-medium text-sm border border-mithril-400/20"
                         >
-                            {copied ? <CheckCircle className="w-6 h-6" /> : <Copy className="w-6 h-6" />}
+                            <Wand2 size={16} />
+                            Generate
                         </button>
                     </div>
-
-                    <button
-                        onClick={generate}
-                        disabled={!secureReady}
-                        className={`w-full font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-2 text-lg shadow-lg ${secureReady ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-900/20' : 'bg-slate-800 text-slate-500 cursor-not-allowed'}`}
-                    >
-                        <RefreshCw className={`w-5 h-5 ${!secureReady ? 'animate-spin' : ''}`} />
-                        {secureReady ? "Generate New Passphrase" : "Decrypting Dictionary..."}
-                    </button>
+                    <div className="text-[9px] text-slate-500 font-mono mt-1 opacity-60">
+                        Tokens: Wwww (Word), wwww (word), Aaaa (Abcd), #### (1234), **** (@#$%)
+                    </div>
                 </div>
+
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
-                <div className="p-4 rounded-lg bg-slate-800/50 border border-slate-700">
-                    <div className="text-2xl font-bold text-white mb-1">AES-256</div>
-                    <div className="text-xs text-slate-500 uppercase tracking-wider font-bold">Source Protection</div>
-                </div>
-                <div className="p-4 rounded-lg bg-slate-800/50 border border-slate-700">
-                    <div className="text-2xl font-bold text-white mb-1">CSPRNG</div>
-                    <div className="text-xs text-slate-500 uppercase tracking-wider font-bold">Randomness</div>
-                </div>
-                <div className="p-4 rounded-lg bg-slate-800/50 border border-slate-700">
-                    <div className="text-2xl font-bold text-white mb-1">High</div>
-                    <div className="text-xs text-slate-500 uppercase tracking-wider font-bold">Security</div>
-                </div>
+            {/* Output / History */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
+                {history.length === 0 && (
+                    <div className="h-full flex items-center justify-center text-slate-600 text-sm italic">
+                        Ready to forge keys...
+                    </div>
+                )}
+
+                {history.map((pwd, i) => (
+                    <div key={i} className="group relative bg-slate-900/40 border border-white/5 rounded-lg p-3 flex items-center justify-between hover:border-mithril-500/30 transition-colors">
+                        <span className="font-mono text-lg text-mithril-50 tracking-wide select-all">
+                            {pwd}
+                        </span>
+
+                        <button
+                            onClick={() => copyToClipboard(pwd)}
+                            className="text-slate-500 hover:text-white transition-colors opacity-0 group-hover:opacity-100 p-2"
+                            title="Copy"
+                        >
+                            <Copy size={16} />
+                        </button>
+                    </div>
+                ))}
             </div>
         </div>
     );
-};
-
-export default PasswordGen;
+}

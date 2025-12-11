@@ -1,0 +1,98 @@
+#0 building with "desktop-linux" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 657B done
+#1 WARN: FromAsCasing: 'as' and 'FROM' keywords' casing do not match (line 2)
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/node:20-alpine
+#2 DONE 0.1s
+
+#3 [internal] load metadata for docker.io/library/nginx:alpine
+#3 DONE 0.1s
+
+#4 [internal] load .dockerignore
+#4 transferring context: 106B done
+#4 DONE 0.0s
+
+#5 [internal] load build context
+#5 transferring context: 2.56kB done
+#5 DONE 0.0s
+
+#6 [stage-1 1/4] FROM docker.io/library/nginx:alpine@sha256:289decab414250121a93c3f1b8316b9c69906de3a4993757c424cb964169ad42
+#6 resolve docker.io/library/nginx:alpine@sha256:289decab414250121a93c3f1b8316b9c69906de3a4993757c424cb964169ad42 0.0s done
+#6 DONE 0.0s
+
+#7 [builder 1/6] FROM docker.io/library/node:20-alpine@sha256:643e7036aa985317ebfee460005e322aa550c6b6883000d01daefb58689a58e2
+#7 resolve docker.io/library/node:20-alpine@sha256:643e7036aa985317ebfee460005e322aa550c6b6883000d01daefb58689a58e2 0.0s done
+#7 DONE 0.0s
+
+#8 [builder 2/6] WORKDIR /app
+#8 CACHED
+
+#9 [builder 3/6] COPY package*.json ./
+#9 CACHED
+
+#10 [builder 4/6] RUN npm install
+#10 3.454 npm error code ERESOLVE
+#10 3.454 npm error ERESOLVE unable to resolve dependency tree
+#10 3.454 npm error
+#10 3.454 npm error While resolving: ip-vibe-check@5.0.0
+#10 3.454 npm error Found: react@18.3.1
+#10 3.454 npm error node_modules/react
+#10 3.454 npm error   react@"^18.2.0" from the root project
+#10 3.454 npm error   peer react@"*" from expo@54.0.27
+#10 3.454 npm error   node_modules/expo
+#10 3.454 npm error     peerOptional expo@">=43.0" from @react-three/fiber@9.4.2
+#10 3.454 npm error     node_modules/@react-three/fiber
+#10 3.454 npm error       @react-three/fiber@"^9.0.4" from the root project
+#10 3.454 npm error     peer expo@"*" from @expo/dom-webview@0.2.8
+#10 3.454 npm error     node_modules/@expo/dom-webview
+#10 3.454 npm error       peerOptional @expo/dom-webview@"*" from expo@54.0.27
+#10 3.454 npm error     4 more (@expo/metro-runtime, expo-asset, expo-file-system, expo-gl)
+#10 3.454 npm error   9 more (@expo/dom-webview, @expo/metro-runtime, react-dom, ...)
+#10 3.454 npm error
+#10 3.454 npm error Could not resolve dependency:
+#10 3.454 npm error peer react@"^19.0.0" from @react-three/fiber@9.4.2
+#10 3.454 npm error node_modules/@react-three/fiber
+#10 3.454 npm error   @react-three/fiber@"^9.0.4" from the root project
+#10 3.454 npm error
+#10 3.454 npm error Fix the upstream dependency conflict, or retry
+#10 3.454 npm error this command with --force or --legacy-peer-deps
+#10 3.454 npm error to accept an incorrect (and potentially broken) dependency resolution.
+#10 3.455 npm error
+#10 3.455 npm error
+#10 3.455 npm error For a full report see:
+#10 3.455 npm error /root/.npm/_logs/2025-12-11T01_52_10_344Z-eresolve-report.txt
+#10 3.457 npm notice
+#10 3.457 npm notice New major version of npm available! 10.8.2 -> 11.7.0
+#10 3.457 npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.7.0
+#10 3.457 npm notice To update run: npm install -g npm@11.7.0
+#10 3.457 npm notice
+#10 3.458 npm error A complete log of this run can be found in: /root/.npm/_logs/2025-12-11T01_52_10_344Z-debug-0.log
+#10 ERROR: process "/bin/sh -c npm install" did not complete successfully: exit code: 1
+------
+ > [builder 4/6] RUN npm install:
+3.455 npm error
+3.455 npm error
+3.455 npm error For a full report see:
+3.455 npm error /root/.npm/_logs/2025-12-11T01_52_10_344Z-eresolve-report.txt
+3.457 npm notice
+3.457 npm notice New major version of npm available! 10.8.2 -> 11.7.0
+3.457 npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.7.0
+3.457 npm notice To update run: npm install -g npm@11.7.0
+3.457 npm notice
+3.458 npm error A complete log of this run can be found in: /root/.npm/_logs/2025-12-11T01_52_10_344Z-debug-0.log
+------
+
+ 1 warning found (use docker --debug to expand):
+ - FromAsCasing: 'as' and 'FROM' keywords' casing do not match (line 2)
+Dockerfile:8
+--------------------
+   6 |     # Copy package files (cache optimization)
+   7 |     COPY package*.json ./
+   8 | >>> RUN npm install
+   9 |     
+  10 |     # Copy source code
+--------------------
+ERROR: failed to build: failed to solve: process "/bin/sh -c npm install" did not complete successfully: exit code: 1
