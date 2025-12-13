@@ -6,6 +6,7 @@ import ElvenFrame from './components/ElvenFrame';
 import IntroSequence from './components/IntroSequence';
 import { WindowProvider, useWindowManager } from './components/WindowManager';
 import ElvenGrid from './components/ElvenGrid';
+import CommandPalette from './components/CommandPalette';
 import RingVault from './components/RingVault';
 import { AnimatePresence } from 'framer-motion';
 
@@ -25,6 +26,8 @@ const Desktop = () => {
                 }>
                     <ElvenGrid />
                 </React.Suspense>
+                {/* Command Palette */}
+                <CommandPalette />
             </main>
             <RingVault />
         </>
