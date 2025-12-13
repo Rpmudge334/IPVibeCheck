@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { Network, Wifi, Server, List } from 'lucide-react';
 import InfoItem from './shared/InfoItem';
+import { useContextMenu } from '../hooks/useContextMenu';
 
 const SubnetCalc = ({ initialNetwork }) => {
     const [input, setInput] = useState(initialNetwork || '');
     const [result, setResult] = useState(null);
+    const { handleContextMenu, MenuComponent } = useContextMenu();
 
     // Auto-calc
     React.useEffect(() => {
@@ -52,7 +54,11 @@ const SubnetCalc = ({ initialNetwork }) => {
     };
 
     return (
-        <div className="max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div
+            className="max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500"
+            onContextMenu={handleContextMenu}
+        >
+            <MenuComponent />
             <form onSubmit={calculate} className="relative z-10 mb-8">
                 <div className="relative group">
                     <div className="absolute -inset-0.5 bg-gradient-to-r from-emerald-600 to-teal-500 rounded-xl blur opacity-30 group-hover:opacity-75 transition duration-1000"></div>

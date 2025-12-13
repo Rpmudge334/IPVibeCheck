@@ -5,6 +5,7 @@ import {
 } from 'recharts';
 import { Shield, Activity, Globe, Wifi } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useContextMenu } from '../hooks/useContextMenu';
 
 const COLLISIONS_PALETTE = ['#0ea5e9', '#38bdf8', '#7dd3fc', '#bae6fd'];
 const THREAT_PALETTE = ['#ef4444', '#f87171', '#fca5a5', '#fecaca'];
@@ -13,7 +14,7 @@ const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6'];
 const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
         return (
-            <div className="bg-slate-900/90 border border-white/10 p-3 rounded-lg shadow-xl text-xs backdrop-blur-md">
+            <div className="bg-slate-900/90 border border-white/10 p-3 rounded-lg shadow-xl text-xs backdrop-blur-md z-50">
                 <p className="font-bold text-slate-200 mb-1">{label}</p>
                 {payload.map((entry, index) => (
                     <div key={index} className="flex items-center gap-2">
@@ -28,7 +29,31 @@ const CustomTooltip = ({ active, payload, label }) => {
     return null;
 };
 
+// Custom Axis Tick that allows Context Menu (Right Click)
+const ContextTick = (props) => {
+    const { x, y, payload } = props;
+    return (
+        <g transform={`translate(${x},${y})`}>
+            <text
+                x={0}
+                y={0}
+                dy={4}
+                textAnchor="end"
+                fill="#94a3b8"
+                fontSize={10}
+                data-context={payload.value} // Hook detects this attribute
+                className="cursor-context-menu hover:fill-white transition-colors"
+                style={{ cursor: 'context-menu' }}
+            >
+                {payload.value}
+            </text>
+        </g>
+    );
+};
+
 export default function SmelterDashboard({ data }) {
+    const { handleContextMenu, MenuComponent } = useContextMenu();
+
     // Process Data
     const stats = useMemo(() => {
         if (!data || data.length === 0) return null;
@@ -52,9 +77,7 @@ export default function SmelterDashboard({ data }) {
             if (port !== 'Other') ports[port] = (ports[port] || 0) + 1;
 
             // Simple Timeline (Index based if no timestamp, or simple aggregation)
-            // Assuming "Timestamp" or just sequence
             const time = row['Time'] || row['Timestamp'] || 'Now';
-            // Simplifying timeline for MVP - just binning by "Events processed"
         });
 
         const sortedIps = Object.entries(ips)
@@ -82,7 +105,11 @@ export default function SmelterDashboard({ data }) {
     if (!stats) return null;
 
     return (
-        <div className="h-full flex flex-col gap-4 animate-in fade-in duration-500 overflow-y-auto custom-scrollbar p-2">
+        <div
+            className="h-full flex flex-col gap-4 animate-in fade-in duration-500 overflow-y-auto custom-scrollbar p-2"
+            onContextMenu={handleContextMenu}
+        >
+            <MenuComponent />
 
             {/* Header Stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -127,8 +154,15 @@ export default function SmelterDashboard({ data }) {
                             <BarChart data={stats.sortedIps} layout="vertical" margin={{ left: 20 }}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" horizontal={false} />
                                 <XAxis type="number" hide />
-                                <YAxis dataKey="name" type="category" stroke="#94a3b8" fontSize={10} width={100} />
-                                <RechartsTooltip content={<CustomTooltip />} />
+                                <YAxis
+                                    dataKey="name"
+                                    type="category"
+                                    stroke="#94a3b8"
+                                    fontSize={10}
+                                    width={100}
+                                    tick={<ContextTick />}
+                                />
+                                <RechartsTooltip content={<CustomTooltip />} cursor={{ fill: 'transparent' }} />
                                 <Bar dataKey="value" fill="#f87171" radius={[0, 4, 4, 0]} barSize={20} />
                             </BarChart>
                         </ResponsiveContainer>
