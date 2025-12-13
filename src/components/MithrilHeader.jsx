@@ -1,14 +1,20 @@
 import React from 'react';
-import { DoorOpen } from 'lucide-react';
 import { motion } from 'framer-motion';
 import DoorIcon from './DoorIcon';
+import { useIsAuthenticated } from "@azure/msal-react";
 
 export default function MithrilHeader() {
+    const isAuthenticated = useIsAuthenticated();
+
+    // Only show header if logged in.
+    // The "door" morphs from the intro screen to here.
+    if (!isAuthenticated) return null;
+
     return (
         <motion.header
             initial={{ y: -100, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 1.0, duration: 1.5, type: "spring", stiffness: 50 }}
+            transition={{ duration: 1.0, type: "spring", stiffness: 50, damping: 20 }}
             className="fixed top-0 left-0 right-0 h-20 z-50 pointer-events-none"
         >
             {/* Glassmorphism Background Banner */}
