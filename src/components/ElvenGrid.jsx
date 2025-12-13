@@ -18,7 +18,14 @@ export default function ElvenGrid() {
     // Dynamic Scaling Calculation
     // As count increases, we shrink the widgets slightly to fit more.
     // Calculation based on VISIBLE windows only.
-    const visibleWindows = useMemo(() => windows.filter(w => !w.isMinimized), [windows]);
+    // STABILITY FIX: We sort by ID to ensure that layout slots don't shuffle when focus changes (Z-order changes).
+    const visibleWindows = useMemo(() => {
+        return windows.filter(w => !w.isMinimized);
+    }, [windows]);
+
+    const stableWindows = useMemo(() => {
+        return [...visibleWindows].sort((a, b) => a.id.localeCompare(b.id)); // Deterministic Order
+    }, [visibleWindows]);
 
     const scale = useMemo(() => {
         const count = visibleWindows.length;
@@ -27,12 +34,12 @@ export default function ElvenGrid() {
         return 0.9; // Should not happen with hard cap of 4, but safe fallback
     }, [visibleWindows.length]);
 
-    const W_W = 320; // Upscaled Base Width
-    const W_H = 280; // Upscaled Base Height
+    const W_W = 490; // +15% from 425
+    const W_H = 380; // +6% from 360
 
     // The Formulation Logic
     const formations = useMemo(() => {
-        const count = visibleWindows.length;
+        const count = stableWindows.length;
         if (count === 0) return {};
 
         const positions = {};
@@ -48,7 +55,7 @@ export default function ElvenGrid() {
             const COLS = Math.floor(CONTAINER_W / (W_W + 20));
             const START_X = 50;
             const START_Y = 50;
-            visibleWindows.forEach((w, i) => {
+            stableWindows.forEach((w, i) => {
                 const col = i % COLS;
                 const row = Math.floor(i / COLS);
                 const x = START_X + col * (W_W + 20) + W_W / 2;
@@ -79,7 +86,7 @@ export default function ElvenGrid() {
 
                 for (let i = 0; i < rowCount; i++) {
                     if (windowIdx < count) {
-                        set(visibleWindows[windowIdx].id, startX + i * (W_W + GAP_X), startY);
+                        set(stableWindows[windowIdx].id, startX + i * (W_W + GAP_X), startY);
                         windowIdx++;
                     }
                 }
@@ -87,7 +94,7 @@ export default function ElvenGrid() {
             });
         }
         return positions;
-    }, [visibleWindows, CONTAINER_W, CONTAINER_H, scale, layoutMode]);
+    }, [stableWindows, CONTAINER_W, CONTAINER_H, scale, layoutMode]);
 
     const handleResize = (id, newSize) => {
         updateWindow(id, { customSize: newSize });
@@ -113,7 +120,8 @@ export default function ElvenGrid() {
 
                 const isMinimized = win.isMinimized;
 
-                // Base position from layout
+                // If minimized, use dummy pos. CSS will hide it.
+                // Or rather, we want it to animate to the bottom.
                 let pos = formations[win.id] || { x: 0, y: 0, w: 300, h: 200 };
 
                 // Override with custom size if available
@@ -124,20 +132,28 @@ export default function ElvenGrid() {
                 const isActive = win.id === activeWindowId;
 
                 return (
+                    // We remove the CSS transition and rely on ElvenWidget's internal layout prop or
+                    // we wrap it in a motion.div explicitly here for entrance/exit.
+                    // Actually, ElvenWidget handles `animate` props largely.
+                    // But to "suck" to dock, we need to override the position in the minimized state.
                     <div
                         key={win.id}
-                        className={`pointer-events-auto transition-opacity duration-300 ${isMinimized ? 'opacity-0 pointer-events-none absolute' : 'opacity-100'}`}
-                        style={isMinimized ? { transform: 'scale(0)' } : {}} // Shrink away
-                        onMouseDown={() => focusWindow(win.id)} // Bring to front on click
+                        className={`pointer-events-auto absolute transition-none ${isMinimized ? 'pointer-events-none' : ''}`}
+                        style={{ zIndex: isActive ? 50 : 10 }}
+                        onMouseDown={() => focusWindow(win.id)}
                     >
                         <ElvenWidget
                             id={win.id}
                             title={win.title}
-                            layoutPos={pos}
+                            // If minimized, target the "Dock" area (bottom center)
+                            layoutPos={isMinimized ?
+                                { x: CONTAINER_W / 2 - 20, y: CONTAINER_H + 50, w: 0, h: 0 } :
+                                pos
+                            }
                             onClose={closeWindow}
                             onMinimize={minimizeWindow}
                             onResize={handleResize}
-                            isDraggable={true}
+                            isDraggable={!isMinimized}
                             zIndex={isActive ? 50 : 10}
                             scale={scale}
                         >

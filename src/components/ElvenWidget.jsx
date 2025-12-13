@@ -15,41 +15,43 @@ export default function ElvenWidget({
     zIndex = 10,
     scale = 1
 }) {
-    // Local size state to handle smooth resizing without thrashing global layout
-    // We initialize with layoutPos dimensions
-    const [size, setSize] = useState({ w: layoutPos.w, h: layoutPos.h });
+    // Local size state only for the active resize operation.
+    // When not resizing, we STRICTLY listen to layoutPos from parent.
+    const [dragSize, setDragSize] = useState({ w: 0, h: 0 });
     const isResizing = useRef(false);
-
-    // Sync local size when layoutPos changes (unless we are currently resizing)
-    useEffect(() => {
-        if (!isResizing.current) {
-            setSize({ w: layoutPos.w, h: layoutPos.h });
-        }
-    }, [layoutPos.w, layoutPos.h]);
+    // We use a ref to track the latest drag size for the mouseUp closure
+    const latestDragSize = useRef({ w: 0, h: 0 });
 
     const handleResizeStart = (e) => {
         e.preventDefault();
         e.stopPropagation();
         isResizing.current = true;
+        // Initialize drag vars
+        const initialSize = { w: layoutPos.w, h: layoutPos.h };
+        setDragSize(initialSize);
+        latestDragSize.current = initialSize;
 
         const startX = e.clientX;
         const startY = e.clientY;
-        const startW = size.w;
-        const startH = size.h;
+        const startW = layoutPos.w;
+        const startH = layoutPos.h;
 
         const handleMouseMove = (moveEvent) => {
             const newW = Math.max(200, startW + (moveEvent.clientX - startX));
             const newH = Math.max(150, startH + (moveEvent.clientY - startY));
-            setSize({ w: newW, h: newH });
+            const newSize = { w: newW, h: newH };
+
+            setDragSize(newSize);
+            latestDragSize.current = newSize;
         };
 
         const handleMouseUp = () => {
             isResizing.current = false;
             window.removeEventListener('mousemove', handleMouseMove);
             window.removeEventListener('mouseup', handleMouseUp);
-            // Commit change
+            // Commit change using the REF value which is fresh
             if (onResize) {
-                onResize(id, { w: size.w, h: size.h });
+                onResize(id, latestDragSize.current);
             }
         };
 
@@ -57,17 +59,24 @@ export default function ElvenWidget({
         window.addEventListener('mouseup', handleMouseUp);
     };
 
+    // Refactor retry: simpler approach.
+    // We just render based on 'isResizing.current'.
+
+    // We need 'currentSize' for the render.
+    const currentW = isResizing.current ? dragSize.w : layoutPos.w;
+    const currentH = isResizing.current ? dragSize.h : layoutPos.h;
+
     return (
         <motion.div
-            layout={!isResizing.current} // Disable layout animation while resizing to avoid fighting
+            layout={!isResizing.current}
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{
                 opacity: 1,
                 scale: 1,
                 x: layoutPos.x,
                 y: layoutPos.y,
-                width: size.w, // Use local size
-                height: size.h, // Use local size
+                width: currentW,
+                height: currentH,
                 zIndex: zIndex
             }}
             exit={{ opacity: 0, scale: 0.8 }}
