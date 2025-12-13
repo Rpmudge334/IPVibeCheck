@@ -12,6 +12,7 @@ const NetworkScanner = React.lazy(() => import('../components/NetworkScanner'));
 const DnsIntel = React.lazy(() => import('../components/DnsIntel'));
 const EmailForensics = React.lazy(() => import('../components/EmailForensics'));
 const DomainAge = React.lazy(() => import('../components/DomainAge'));
+const HelpViewer = React.lazy(() => import('../components/HelpViewer'));
 
 export const TOOL_CATEGORIES = {
     UTILITY: 'utility',
@@ -21,6 +22,14 @@ export const TOOL_CATEGORIES = {
 
 export const ToolRegistry = {
     // Utility Tools
+    help: {
+        id: 'help',
+        label: 'Help & License',
+        title: 'Mithril Documentation',
+        icon: Scroll,
+        component: HelpViewer,
+        category: TOOL_CATEGORIES.UTILITY
+    },
     notepad: {
         id: 'notepad',
         label: 'Notepad',

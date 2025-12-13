@@ -10,6 +10,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import pandas as pd
 import httpx
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # --- Configuration ---
 ABUSEIPDB_KEY = os.getenv("ABUSEIPDB_KEY")
@@ -136,6 +139,18 @@ async def check_ip_reputation(client: httpx.AsyncClient, ip: str) -> dict:
         return {"ip": ip, "error": str(e)}
 
 # --- Endpoints ---
+
+@app.get("/health")
+async def health_check():
+    """Simple health check for frontend status indicator."""
+    return {
+        "status": "online",
+        "timestamp": datetime.now().isoformat(),
+        "services": {
+            "abuseipdb": "configured" if ABUSEIPDB_KEY else "missing_key",
+            "database": "local_json"
+        }
+    }
 
 @app.post("/upload")
 async def upload_log(file: UploadFile = File(...)):

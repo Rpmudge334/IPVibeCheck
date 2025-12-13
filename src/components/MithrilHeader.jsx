@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import DoorIcon from './DoorIcon';
+import SystemStatus from './SystemStatus';
 import { useIsAuthenticated } from "@azure/msal-react";
 
 export default function MithrilHeader() {
@@ -40,6 +41,9 @@ export default function MithrilHeader() {
                         Elen síla lúmenn' omentielvo
                     </p>
                 </div>
+
+                {/* Right: System Status */}
+                <SystemStatus />
             </div>
         </motion.header>
     );
