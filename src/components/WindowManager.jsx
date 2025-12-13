@@ -27,23 +27,24 @@ export const WindowProvider = ({ children }) => {
 
     const openWindow = useCallback((id, component, title = "Tool", initialProps = {}) => {
         setWindows(prev => {
-            if (prev.find(w => w.id === id)) {
-                focusWindow(id);
-                return prev;
+            const existing = prev.find(w => w.id === id);
+            if (existing) {
+                // Return 'prev' reordered (move to end = focus)
+                return [...prev.filter(w => w.id !== id), existing];
             }
 
-            // Grid Auto-Placement Logic (Simple: Just fill next slot)
-            // Real logic would check for collisions.
-            // For now, cascade purely based on count.
-            const count = prev.length;
-            const gridPos = {
-                x: (count % 4) * 4, // 4 columns wide roughly?
-                y: Math.floor(count / 4) * 4,
-                w: 4,
-                h: 4
-            };
+            // Grid Auto-Placement (Legacy placeholder, actual pos handled by ElvenGrid)
+            let currentWindows = prev;
 
-            return [...prev, {
+            // CAP: Max 4 Widgets
+            if (currentWindows.length >= 4) {
+                // Remove the oldest (first in array) to make room
+                currentWindows = currentWindows.slice(1);
+            }
+
+            const gridPos = { x: 0, y: 0, w: 4, h: 4 }; // Placeholder
+
+            return [...currentWindows, {
                 id,
                 component,
                 title,
@@ -51,8 +52,9 @@ export const WindowProvider = ({ children }) => {
                 gridPos
             }];
         });
+        // Always set active ID
         setActiveWindowId(id);
-    }, [focusWindow]);
+    }, []);
 
     const closeWindow = useCallback((id) => {
         setWindows(prev => prev.filter(w => w.id !== id));

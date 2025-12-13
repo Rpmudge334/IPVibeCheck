@@ -1,4 +1,3 @@
-```javascript
 import React, { useRef, useMemo, useState } from 'react';
 import { useWindowManager } from './WindowManager';
 import ElvenWidget from './ElvenWidget';
@@ -7,7 +6,7 @@ import { LayoutGrid, Loader, Activity } from 'lucide-react';
 export default function ElvenGrid() {
     const { windows, closeWindow, focusWindow, activeWindowId } = useWindowManager();
     const [layoutMode, setLayoutMode] = useState('geometric'); // 'geometric' | 'grid'
-    
+
     // We assume a fixed container size for the dashboard area.
     const CONTAINER_W = window.innerWidth;
     const CONTAINER_H = window.innerHeight - 100; // Minus header
@@ -26,8 +25,8 @@ export default function ElvenGrid() {
         return 0.7;
     }, [windows.length]);
 
-    const W_W = BASE_W * scale;
-    const W_H = BASE_H * scale;
+    const W_W = 240;
+    const W_H = 240;
 
     // The Formulation Logic
     const formations = useMemo(() => {
@@ -36,74 +35,74 @@ export default function ElvenGrid() {
 
         const positions = {};
         const CX = CONTAINER_W / 2;
-        const CY = CONTAINER_H / 2 + 50;
+        const CY = CONTAINER_H / 2; // True Center
 
-        // Helper to set pos
-        const set = (idx, x, y) => {
-            positions[windows[idx].id] = { x: x - W_W / 2, y: y - W_H / 2, w: W_W, h: W_H };
+        // Shared helper
+        const set = (id, x, y) => {
+            positions[id] = { x: x - W_W / 2, y: y - W_H / 2, w: W_W, h: W_H };
         };
 
         if (layoutMode === 'grid') {
-            // Standard Grid Layout
-            const COLS = Math.floor(CONTAINER_W / (W_W + 20)); // How many fit?
+            const COLS = Math.floor(CONTAINER_W / (W_W + 20));
             const START_X = 50;
             const START_Y = 50;
-            
             windows.forEach((w, i) => {
                 const col = i % COLS;
                 const row = Math.floor(i / COLS);
-                
-                // Pure Top-Left aligned grid
-                const x = START_X + col * (W_W + 20) + W_W/2; // Offset for center-anchor logic in 'set'
-                const y = START_Y + row * (W_H + 20) + W_H/2;
-                set(i, x, y);
+                const x = START_X + col * (W_W + 20) + W_W / 2;
+                const y = START_Y + row * (W_H + 20) + W_H / 2;
+                set(w.id, x, y);
             });
-
         } else {
-            // Geometric Layout
-            if (count === 1) {
-                // 1. Center
-                set(0, CX, CY);
-            } else if (count === 2) {
-                // 2. Line (- -)
-                const gap = 20 * scale;
-                const span = W_W * 2 + gap;
-                set(0, CX - span / 4 - gap / 2, CY);
-                set(1, CX + span / 4 + gap / 2, CY);
-            } else if (count === 3) {
-                // 3. Triangle (_-_)
-                // Top Center
-                set(0, CX, CY - W_H / 2 - 20 * scale);
-                // Bottom Left
-                set(1, CX - W_W / 2 - 20 * scale, CY + W_H / 2 + 20 * scale);
-                // Bottom Right
-                set(2, CX + W_W / 2 + 20 * scale, CY + W_H / 2 + 20 * scale);
-            } else if (count === 4) {
-                // 4. Rectangle (==)
-                const gap = 30 * scale;
-                // TL, TR, BL, BR
-                set(0, CX - W_W / 2 - gap / 2, CY - W_H / 2 - gap / 2);
-                set(1, CX + W_W / 2 + gap / 2, CY - W_H / 2 - gap / 2);
-                set(2, CX - W_W / 2 - gap / 2, CY + W_H / 2 + gap / 2);
-                set(3, CX + W_W / 2 + gap / 2, CY + W_H / 2 + gap / 2);
-            } else {
-                // 5+. Pentagon/Hexagon/Circle (Orbit)
-                const radius = Math.min(CONTAINER_W, CONTAINER_H) / 3;
-                windows.forEach((w, i) => {
-                    const angle = (i / count) * Math.PI * 2 - Math.PI / 2; // Start top
-                    const x = CX + Math.cos(angle) * (radius * scale); // Scale radius too? Maybe not.
-                    const y = CY + Math.sin(angle) * (radius * scale);
-                    set(i, x, y);
-                });
+            // Geometric Layout (Collision-Free Centered Rows)
+            let rows = [];
+
+            // Refined "Pyramid" Stacks for clear visibility
+            if (count === 1) rows = [1];
+            else if (count === 2) rows = [2];
+            else if (count === 3) rows = [1, 2]; // Triangle
+            else if (count === 4) rows = [2, 2]; // Square
+            else if (count === 5) rows = [1, 2, 2]; // Tall Pyramid (prevents horizontal crowding)
+            else if (count === 6) rows = [2, 2, 2]; // Tower (safer than 3,3 on narrow screens)
+            else if (count === 7) rows = [2, 3, 2]; // Hexagon-ish
+            else if (count === 8) rows = [2, 2, 2, 2]; // Tall Tower
+            else if (count === 9) rows = [3, 3, 3]; // Box
+            else {
+                // Generative fallback: Max 3 per row
+                const fullRows = Math.floor(count / 3);
+                const remainder = count % 3;
+                rows = Array(fullRows).fill(3);
+                if (remainder) rows.push(remainder);
             }
+
+            // Calculate total height to center vertically
+            const GAP_Y = 20 * scale;
+            const GAP_X = 20 * scale;
+            const totalH = rows.length * W_H + (rows.length - 1) * GAP_Y;
+            let startY = CY - totalH / 2 + W_H / 2;
+
+            let windowIdx = 0;
+            rows.forEach((rowCount) => {
+                // Center this row horizontally
+                const rowW = rowCount * W_W + (rowCount - 1) * GAP_X;
+                let startX = CX - rowW / 2 + W_W / 2;
+
+                for (let i = 0; i < rowCount; i++) {
+                    if (windowIdx < count) {
+                        set(windows[windowIdx].id, startX + i * (W_W + GAP_X), startY);
+                        windowIdx++;
+                    }
+                }
+                startY += W_H + GAP_Y;
+            });
         }
         return positions;
-    }, [windows.length, CONTAINER_W, CONTAINER_H, scale, layoutMode]); // Re-run when count changes
+    }, [windows.length, CONTAINER_W, CONTAINER_H, scale, layoutMode]);
 
     return (
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
-             {/* Layout Toggle Button */}
-             <div className="absolute top-4 right-4 z-[60] pointer-events-auto">
+            {/* Layout Toggle Button */}
+            <div className="absolute top-4 right-4 z-[60] pointer-events-auto">
                 <button
                     onClick={() => setLayoutMode(prev => prev === 'geometric' ? 'grid' : 'geometric')}
                     className="p-2 bg-slate-900/50 backdrop-blur-md border border-mithril-500/30 rounded-full hover:bg-mithril-500/20 hover:text-white transition-all text-slate-400"

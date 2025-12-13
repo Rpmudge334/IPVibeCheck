@@ -21,6 +21,7 @@ const Palantir = ({ label, color, icon: Icon, tools, onClick, isActive }) => {
         <div className="relative flex flex-col items-center group">
             {/* The Orb */}
             <motion.div
+                data-testid={`orb-${label.toLowerCase()}`}
                 whileHover={{ scale: 1.1, y: -10 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={onClick}
@@ -47,14 +48,15 @@ const Palantir = ({ label, color, icon: Icon, tools, onClick, isActive }) => {
             <AnimatePresence>
                 {isActive && (
                     <motion.div
+                        className="absolute bottom-24 flex flex-col gap-2 min-w-[180px]"
                         initial={{ opacity: 0, y: 20, scale: 0.8 }}
                         animate={{ opacity: 1, y: -20, scale: 1 }}
                         exit={{ opacity: 0, y: 20, scale: 0.8 }}
-                        className="absolute bottom-24 flex flex-col gap-2 min-w-[180px]"
                     >
                         {tools.map((tool, i) => (
                             <motion.button
                                 key={i}
+                                data-testid={`tool-${tool.label.toLowerCase().replace(/\s+/g, '-')}`}
                                 initial={{ opacity: 0, x: -20 }}
                                 animate={{ opacity: 1, x: 0 }}
                                 transition={{ delay: i * 0.05 }}
@@ -79,32 +81,50 @@ export default function ArtifactNav() {
     const { openWindow } = useWindowManager();
     const isAuthenticated = useIsAuthenticated();
     const [activeOrb, setActiveOrb] = useState(null);
+    const containerRef = React.useRef(null);
+
+    // Close on Click Outside
+    React.useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (containerRef.current && !containerRef.current.contains(event.target)) {
+                setActiveOrb(null);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const handleLaunch = (id, component, title) => {
+        openWindow(id, component, title);
+        setActiveOrb(null); // Auto-close menu
+    };
 
     const toggleOrb = (orb) => setActiveOrb(activeOrb === orb ? null : orb);
 
     if (!isAuthenticated) return null;
 
     const utilityTools = [
-        { label: 'Notepad', icon: Scroll, onClick: () => openWindow('notepad', <Notepad />, 'Scratchpad') },
-        { label: 'Ticket Scribe', icon: Search, onClick: () => openWindow('ticket', <TicketScribe />, 'Ticket Scribe') },
-        { label: 'Password Gen', icon: Key, onClick: () => openWindow('passgen', <PasswordGen />, 'Password Forge') },
-        { label: 'MAC Lookup', icon: Search, onClick: () => openWindow('mac', <MacLookup />, 'MAC Address Lookup') },
+        { label: 'Notepad', icon: Scroll, onClick: () => handleLaunch('notepad', <Notepad />, 'Scratchpad') },
+        { label: 'Ticket Scribe', icon: Search, onClick: () => handleLaunch('ticket', <TicketScribe />, 'Ticket Scribe') },
+        { label: 'Password Gen', icon: Key, onClick: () => handleLaunch('passgen', <PasswordGen />, 'Password Forge') },
+        { label: 'MAC Lookup', icon: Search, onClick: () => handleLaunch('mac', <MacLookup />, 'MAC Address Lookup') },
     ];
 
     const securityTools = [
-        { label: 'Log Analyzer', icon: Flame, onClick: () => openWindow('smelter', <SmeltingChamber />, 'Smelting Chamber') },
-        { label: 'Target Scanner', icon: Sword, onClick: () => openWindow('scan', <NetworkScanner />, 'Vulnerability Scanner') },
-        { label: 'Email Tracer', icon: Eye, onClick: () => openWindow('email', <EmailForensics />, 'Header Visualizer') },
+        { label: 'Log Analyzer', icon: Flame, onClick: () => handleLaunch('smelter', <SmeltingChamber />, 'Smelting Chamber') },
+        { label: 'Target Scanner', icon: Sword, onClick: () => handleLaunch('scan', <NetworkScanner />, 'Vulnerability Scanner') },
+        { label: 'Email Tracer', icon: Eye, onClick: () => handleLaunch('email', <EmailForensics />, 'Header Visualizer') },
     ];
 
     const networkTools = [
-        { label: 'Subnet Calc', icon: Compass, onClick: () => openWindow('subnet', <SubnetCalculator />, 'Subnet Calculator') },
-        { label: 'DNS Intel', icon: MapPin, onClick: () => openWindow('dns', <DnsIntel />, 'DNS Intelligence') },
-        { label: 'Domain Age', icon: Hourglass, onClick: () => openWindow('age', <DomainAge />, 'Domain Age Recon') },
+        { label: 'Subnet Calc', icon: Compass, onClick: () => handleLaunch('subnet', <SubnetCalculator />, 'Subnet Calculator') },
+        { label: 'DNS Intel', icon: MapPin, onClick: () => handleLaunch('dns', <DnsIntel />, 'DNS Intelligence') },
+        { label: 'Domain Age', icon: Hourglass, onClick: () => handleLaunch('age', <DomainAge />, 'Domain Age Recon') },
     ];
 
     return (
         <motion.div
+            ref={containerRef}
             className="fixed bottom-8 left-0 right-0 z-40 flex justify-center items-end gap-12 pointer-events-none"
             initial={{ opacity: 0, y: 100 }}
             animate={{ opacity: 1, y: 0 }}
