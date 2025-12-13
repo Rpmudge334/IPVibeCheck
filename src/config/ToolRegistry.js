@@ -36,7 +36,8 @@ export const ToolRegistry = {
         title: 'Scratchpad',
         icon: Scroll,
         component: Notepad,
-        category: TOOL_CATEGORIES.UTILITY
+        category: TOOL_CATEGORIES.UTILITY,
+        commands: ['note', 'write', 'text', 'scratch']
     },
     ticket: {
         id: 'ticket',
@@ -44,7 +45,8 @@ export const ToolRegistry = {
         title: 'Ticket Scribe',
         icon: Search,
         component: TicketScribe,
-        category: TOOL_CATEGORIES.UTILITY
+        category: TOOL_CATEGORIES.UTILITY,
+        commands: ['ticket', 'scribe', 'report', 'issue']
     },
     passgen: {
         id: 'passgen',
@@ -52,7 +54,8 @@ export const ToolRegistry = {
         title: 'Password Forge',
         icon: Key,
         component: PasswordGen,
-        category: TOOL_CATEGORIES.UTILITY
+        category: TOOL_CATEGORIES.UTILITY,
+        commands: ['pass', 'gen', 'secret', 'key']
     },
     mac: {
         id: 'mac',
@@ -60,7 +63,8 @@ export const ToolRegistry = {
         title: 'MAC Address Lookup',
         icon: Search,
         component: MacLookup,
-        category: TOOL_CATEGORIES.UTILITY
+        category: TOOL_CATEGORIES.UTILITY,
+        commands: ['mac', 'oui', 'vendor']
     },
 
     // Security Tools
@@ -70,7 +74,8 @@ export const ToolRegistry = {
         title: 'Smelting Chamber',
         icon: Flame,
         component: SmeltingChamber,
-        category: TOOL_CATEGORIES.SECURITY
+        category: TOOL_CATEGORIES.SECURITY,
+        commands: ['log', 'syslog', 'analyze', 'smelt']
     },
     scan: {
         id: 'scan',
@@ -78,7 +83,8 @@ export const ToolRegistry = {
         title: 'Vulnerability Scanner',
         icon: Sword,
         component: NetworkScanner,
-        category: TOOL_CATEGORIES.SECURITY
+        category: TOOL_CATEGORIES.SECURITY,
+        commands: ['scan', 'nmap', 'ping', 'recon']
     },
     email: {
         id: 'email',
@@ -86,7 +92,8 @@ export const ToolRegistry = {
         title: 'Header Visualizer',
         icon: Eye,
         component: EmailForensics,
-        category: TOOL_CATEGORIES.SECURITY
+        category: TOOL_CATEGORIES.SECURITY,
+        commands: ['email', 'header', 'trace', 'smtp']
     },
 
     // Network Tools
@@ -96,7 +103,8 @@ export const ToolRegistry = {
         title: 'Subnet Calculator',
         icon: Compass,
         component: SubnetCalculator,
-        category: TOOL_CATEGORIES.NETWORK
+        category: TOOL_CATEGORIES.NETWORK,
+        commands: ['calc', 'subnet', 'cidr', 'ip']
     },
     dns: {
         id: 'dns',
@@ -104,7 +112,8 @@ export const ToolRegistry = {
         title: 'DNS Intelligence',
         icon: MapPin,
         component: DnsIntel,
-        category: TOOL_CATEGORIES.NETWORK
+        category: TOOL_CATEGORIES.NETWORK,
+        commands: ['dns', 'dig', 'nslookup', 'whois']
     },
     age: {
         id: 'age',
@@ -112,8 +121,9 @@ export const ToolRegistry = {
         title: 'Domain Age Recon',
         icon: Hourglass,
         component: DomainAge,
-        category: TOOL_CATEGORIES.NETWORK
-    }
+        category: TOOL_CATEGORIES.NETWORK,
+        commands: ['age', 'old', 'whois', 'created']
+    },
 };
 
 export const getToolById = (id) => ToolRegistry[id];

@@ -23,11 +23,99 @@ export default function CommandPalette() {
         return () => document.removeEventListener('keydown', handleKeyDown);
     }, []);
 
-    // Filter tools
-    const filteredTools = getAllTools().filter(tool =>
-        tool.label.toLowerCase().includes(query.toLowerCase()) ||
-        tool.title.toLowerCase().includes(query.toLowerCase())
-    );
+    // Advanced Command Parsing
+    const getFilteredItems = () => {
+        const q = query.toLowerCase().trim();
+        // Return all tools if empty? No, usually empty list or recent.
+        // If empty, maybe show all tools? User asked for "tools listed".
+        // Let's rely on standard logic: if q empty, return basic list or empty?
+        // Current code returns [] if !q.
+        if (!q) return getAllTools().map(t => ({ type: 'app', data: t })); // Show all if empty for exploration
+
+        let results = [];
+        const parts = q.split(' ');
+        const cmd = parts[0];
+        const arg = parts.slice(1).join(' ');
+
+        // 1. Direct Tool Matches (Label, Title, Commands)
+        // Check if the query *starts* with a command alias, if so, preserve that tool
+        const matchedTools = getAllTools().filter(tool => {
+            const labelMatch = tool.label.toLowerCase().includes(q) || tool.title.toLowerCase().includes(q);
+            const cmdMatch = tool.commands && tool.commands.some(c => c.startsWith(cmd)); // Fuzzy command match
+            return labelMatch || cmdMatch;
+        });
+
+        results = matchedTools.map(t => ({ type: 'app', data: t }));
+
+        // 2. Argument Parsing (Dynamic CLI Commands)
+        if (arg) {
+            // SCAN <IP>
+            if (['scan', 'nmap', 'ping'].includes(cmd)) {
+                results.unshift({
+                    type: 'action',
+                    label: `Scan Target: ${arg}`,
+                    subLabel: `Launch Network Scanner for ${arg}`,
+                    icon: Search,
+                    action: () => openWindow('scan', { initialIP: arg })
+                });
+            }
+            // DNS <DOMAIN>
+            if (['dns', 'dig', 'nslookup'].includes(cmd)) {
+                results.unshift({
+                    type: 'action',
+                    label: `Resolve Domain: ${arg}`,
+                    subLabel: `Launch DNS Intel for ${arg}`,
+                    icon: Search,
+                    action: () => openWindow('dns', { initialDomain: arg })
+                });
+            }
+            // MAC <ADDR>
+            if (['mac', 'oui', 'vendor'].includes(cmd)) {
+                results.unshift({
+                    type: 'action',
+                    label: `Lookup MAC: ${arg}`,
+                    subLabel: `Launch MAC Lookup for ${arg}`,
+                    icon: Search,
+                    action: () => openWindow('mac', { initialMac: arg })
+                });
+            }
+            // TICKET <TEXT>
+            if (['ticket', 'scribe', 'report'].includes(cmd)) {
+                results.unshift({
+                    type: 'action',
+                    label: `Create Ticket: ${arg}`,
+                    subLabel: `Open Ticket Scribe with Title "${arg}"`,
+                    icon: Search, // Maybe use Scroll icon if available
+                    action: () => openWindow('ticket', { initialTitle: arg })
+                });
+            }
+            // PASS <LENGTH>
+            if (['pass', 'gen', 'secret'].includes(cmd)) {
+                const len = parseInt(arg);
+                results.unshift({
+                    type: 'action',
+                    label: `Generate Password (${arg} chars)`,
+                    subLabel: `Launch Password Gen with length ${arg}`,
+                    icon: Search, // Key icon ideal
+                    action: () => openWindow('passgen', { initialLength: len || 16 })
+                });
+            }
+            // AGE <DOMAIN>
+            if (['age', 'old', 'whois'].includes(cmd)) {
+                results.unshift({
+                    type: 'action',
+                    label: `Check Age: ${arg}`,
+                    subLabel: `Launch Domain Age for ${arg}`,
+                    icon: Search,
+                    action: () => openWindow('age', { initialDomain: arg })
+                });
+            }
+        }
+
+        return results;
+    };
+
+    const filteredItems = getFilteredItems();
 
     // Reset selection on query change
     useEffect(() => {
@@ -43,23 +131,32 @@ export default function CommandPalette() {
     }, [isOpen]);
 
     const handleSelect = (toolId) => {
-        openWindow(toolId);
         setIsOpen(false);
+        // Defer opening window to allow palette to close smoothly and avoid render conflict
+        setTimeout(() => {
+            openWindow(toolId);
+        }, 100);
     };
 
     const handleNavigation = (e) => {
         if (e.key === 'ArrowDown') {
             e.preventDefault();
-            setSelectedIndex(prev => (prev + 1) % filteredTools.length);
+            setSelectedIndex(prev => (prev + 1) % filteredItems.length);
         } else if (e.key === 'ArrowUp') {
             e.preventDefault();
-            setSelectedIndex(prev => (prev - 1 + filteredTools.length) % filteredTools.length);
+            setSelectedIndex(prev => (prev - 1 + filteredItems.length) % filteredItems.length);
         } else if (e.key === 'Enter') {
             e.preventDefault();
-            if (filteredTools[selectedIndex]) {
-                handleSelect(filteredTools[selectedIndex].id);
+            const item = filteredItems[selectedIndex];
+            if (item) {
+                if (item.type === 'app') {
+                    handleSelect(item.data.id);
+                } else {
+                    setIsOpen(false);
+                    setTimeout(item.action, 100);
+                }
             }
-            if (filteredTools.length === 0 && query.trim() === '') {
+            if (filteredItems.length === 0 && query.trim() === '') {
                 // Wait, if no tools, maybe run a command? future proofing.
             }
         } else if (e.key === 'Escape') {
@@ -107,48 +204,135 @@ export default function CommandPalette() {
                             </div>
                         </div>
 
-                        {/* Results List */}
-                        <div className="max-h-[60vh] overflow-y-auto custom-scrollbar p-2">
-                            {filteredTools.length > 0 ? (
-                                <div className="space-y-1">
-                                    <div className="px-2 py-1 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                                        Applications
-                                    </div>
-                                    {filteredTools.map((tool, index) => (
-                                        <button
-                                            key={tool.id}
-                                            onClick={() => handleSelect(tool.id)}
-                                            onMouseEnter={() => setSelectedIndex(index)}
-                                            className={`
-                                                w-full flex items-center justify-between px-3 py-3 rounded-lg text-left transition-colors
-                                                ${index === selectedIndex ? 'bg-mithril-500/20 text-white' : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'}
-                                            `}
-                                        >
-                                            <div className="flex items-center gap-3">
-                                                <div className={`
-                                                    p-2 rounded-md 
-                                                    ${index === selectedIndex ? 'bg-mithril-500/20 text-mithril-300' : 'bg-white/5 text-slate-400'}
-                                                `}>
-                                                    <tool.icon size={18} />
-                                                </div>
-                                                <div>
-                                                    <div className="font-medium">{tool.label}</div>
-                                                    <div className="text-xs text-slate-500">{tool.title}</div>
-                                                </div>
-                                            </div>
+                        {/* Content Area (Split View) */}
+                        <div className="flex flex-1 overflow-hidden min-h-[300px]">
 
-                                            {index === selectedIndex && (
-                                                <CornerDownLeft size={16} className="text-slate-500" />
-                                            )}
-                                        </button>
-                                    ))}
-                                </div>
-                            ) : (
-                                <div className="py-12 flex flex-col items-center justify-center text-slate-500">
-                                    <Search size={48} className="mb-4 opacity-20" />
-                                    <p>No tools found for "{query}"</p>
-                                </div>
-                            )}
+                            {/* Left: Results List */}
+                            <div className="flex-1 overflow-y-auto custom-scrollbar p-2 border-r border-white/5">
+                                {filteredItems.length > 0 ? (
+                                    <div className="space-y-1">
+                                        <div className="px-2 py-1 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+                                            Results
+                                        </div>
+                                        {filteredItems.map((item, index) => {
+                                            const isApp = item.type === 'app';
+                                            const data = isApp ? item.data : item;
+                                            const isSelected = index === selectedIndex;
+
+                                            return (
+                                                <button
+                                                    key={index}
+                                                    onClick={() => {
+                                                        if (isApp) handleSelect(data.id);
+                                                        else {
+                                                            setIsOpen(false);
+                                                            setTimeout(item.action, 100);
+                                                        }
+                                                    }}
+                                                    onMouseEnter={() => setSelectedIndex(index)}
+                                                    className={`
+                                                    w-full flex items-center justify-between px-3 py-3 rounded-lg text-left transition-all
+                                                    ${isSelected ? 'bg-mithril-600/20 shadow-lg border border-mithril-500/20' : 'text-slate-400 border border-transparent hover:bg-white/5'}
+                                                `}
+                                                >
+                                                    <div className="flex items-center gap-3">
+                                                        <div className={`
+                                                        p-2 rounded-md transition-colors
+                                                        ${isSelected ? 'bg-mithril-500/20 text-mithril-300' : 'bg-white/5 text-slate-500'}
+                                                    `}>
+                                                            {isApp ? <data.icon size={18} /> : <item.icon size={18} />}
+                                                        </div>
+                                                        <div>
+                                                            <div className={`font-medium ${isSelected ? 'text-white' : 'text-slate-300'}`}>
+                                                                {isApp ? data.label : item.label}
+                                                            </div>
+                                                            <div className="text-xs text-slate-500">
+                                                                {isApp ? data.title : item.subLabel}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    {isSelected && (
+                                                        <CornerDownLeft size={16} className="text-mithril-400" />
+                                                    )}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                ) : (
+                                    <div className="h-full flex flex-col items-center justify-center text-slate-500">
+                                        <Search size={48} className="mb-4 opacity-20" />
+                                        <p>No matches found</p>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Right: Inspector Panel */}
+                            <div className="w-1/3 bg-black/20 p-4 hidden md:flex flex-col">
+                                {filteredItems[selectedIndex] ? (
+                                    <div className="animate-in fade-in duration-300 slide-in-from-right-4">
+                                        {(() => {
+                                            const item = filteredItems[selectedIndex];
+                                            const isApp = item.type === 'app';
+                                            const data = isApp ? item.data : item;
+                                            const Icon = isApp ? data.icon : item.icon;
+
+                                            return (
+                                                <>
+                                                    <div className="flex items-center gap-4 mb-6 border-b border-white/10 pb-4">
+                                                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-mithril-500/20 to-slate-800 flex items-center justify-center border border-mithril-500/30 shadow-inner">
+                                                            <Icon size={24} className="text-mithril-300" />
+                                                        </div>
+                                                        <div>
+                                                            <h3 className="text-lg font-bold text-white">{isApp ? data.label : data.label}</h3>
+                                                            <p className="text-xs text-slate-400">{isApp ? data.category?.toUpperCase() : 'ACTION'}</p>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="space-y-6">
+                                                        {isApp && data.commands && (
+                                                            <div>
+                                                                <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-2">CLI Aliases</h4>
+                                                                <div className="flex flex-wrap gap-2">
+                                                                    {data.commands.map(cmd => (
+                                                                        <span key={cmd} className="px-2 py-1 bg-white/5 border border-white/10 rounded text-xs text-mithril-200 font-mono">
+                                                                            {cmd}
+                                                                        </span>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        )}
+
+                                                        <div>
+                                                            <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-2">Description</h4>
+                                                            <p className="text-sm text-slate-300 leading-relaxed">
+                                                                {isApp ? (
+                                                                    `Launch the ${data.title} module directly. You can use any of the aliases to find this quickly.`
+                                                                ) : (
+                                                                    `Execute this action immediately with the provided parameters.`
+                                                                )}
+                                                            </p>
+                                                        </div>
+
+                                                        {isApp && data.commands && (
+                                                            <div>
+                                                                <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-2">Example Usage</h4>
+                                                                <div className="bg-black/40 rounded-lg p-3 text-xs font-mono text-slate-400 border border-white/5">
+                                                                    <span className="text-mithril-400">{data.commands[0]}</span> <span className="text-slate-600">[arg]</span>
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </>
+                                            );
+                                        })()}
+                                    </div>
+                                ) : (
+                                    <div className="h-full flex items-center justify-center text-slate-600 text-sm">
+                                        Select an item to view details
+                                    </div>
+                                )}
+                            </div>
                         </div>
 
                         {/* Footer */}

@@ -185,7 +185,7 @@ export default function ElvenGrid() {
                             zIndex={isActive ? 50 : 10}
                             scale={scale}
                         >
-                            {ToolComponent ? <ToolComponent /> : <div>Component Not Found</div>}
+                            {ToolComponent ? <ToolComponent {...win.props} /> : <div>Component Not Found</div>}
                         </ElvenWidget>
                     </div>
                 );

@@ -6,7 +6,7 @@ const OPTIONS = {
     categories: ['Network Issue', 'Software Bug', 'Hardware Failure', 'Access Request', 'Security Incident', 'Other']
 };
 
-export default function TicketScribe() {
+export default function TicketScribe(props) {
     const [form, setForm] = useState({
         subject: '',
         category: 'Network Issue',
@@ -15,6 +15,13 @@ export default function TicketScribe() {
         steps: '',
         expected: ''
     });
+
+    // Auto-fill from CLI args
+    React.useEffect(() => {
+        if (props.initialTitle) {
+            setForm(prev => ({ ...prev, subject: props.initialTitle }));
+        }
+    }, [props.initialTitle]);
 
     const [copied, setCopied] = useState(false);
 

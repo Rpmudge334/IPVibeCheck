@@ -3,18 +3,26 @@ import { Search, Globe, Calendar, AlertTriangle, ShieldCheck, ExternalLink, Serv
 import InfoItem from './shared/InfoItem';
 import ExternalTool from './shared/ExternalTool';
 
-const DomainAge = () => {
-    const [input, setInput] = useState('');
+const DomainAge = ({ initialDomain }) => {
+    const [input, setInput] = useState(initialDomain || '');
     const [result, setResult] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
-    const checkAge = async (e) => {
-        e.preventDefault();
-        if (!input) return;
+    // Auto-scan if prop provided
+    React.useEffect(() => {
+        if (initialDomain) {
+            checkAge(null, initialDomain);
+        }
+    }, [initialDomain]);
+
+    const checkAge = async (e, explicitDomain = null) => {
+        if (e) e.preventDefault();
+        const target = explicitDomain || input;
+        if (!target) return;
         setLoading(true); setResult(null); setError(null);
 
-        const domain = input.trim().replace(/(^\w+:|^)\/\//, '').split('/')[0];
+        const domain = target.trim().replace(/(^\w+:|^)\/\//, '').split('/')[0];
         let creationDate = null;
         let source = 'Unknown';
         let risk = 'Unknown';

@@ -4,9 +4,16 @@ import InfoItem from './shared/InfoItem';
 import ExternalTool from './shared/ExternalTool';
 import { isIP, copyToClipboard } from '../utils/helpers';
 
-const NetworkScanner = ({ privacyMode, toast }) => {
-    const [input, setInput] = useState('');
+const NetworkScanner = ({ privacyMode, toast, initialIP }) => {
+    const [input, setInput] = useState(initialIP || '');
     const [loading, setLoading] = useState(false);
+
+    // Auto-scan if initialIP is provided
+    useEffect(() => {
+        if (initialIP) {
+            handleSearch();
+        }
+    }, [initialIP]);
     const [data, setData] = useState(null);
     const [error, setError] = useState(null);
     const [history, setHistory] = useState([]);

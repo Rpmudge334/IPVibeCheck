@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import DurinsGate from './components/DurinsGate';
 import MithrilHeader from './components/MithrilHeader';
 import ArtifactNav from './components/ArtifactNav';
@@ -26,9 +26,9 @@ const Desktop = () => {
                 }>
                     <ElvenGrid />
                 </React.Suspense>
-                {/* Command Palette */}
-                <CommandPalette />
             </main>
+            {/* Command Palette (Moved outside main to avoid pointer-events-none) */}
+            <CommandPalette />
             <RingVault />
         </>
     );
@@ -37,8 +37,7 @@ const Desktop = () => {
 export default function App() {
     return (
         <WindowProvider>
-            {/* REMOVED bg-slate-950 to allow transparency for 3D background */}
-            <div className="min-h-screen text-slate-200 font-sans selection:bg-mithril-500/30 overflow-hidden relative">
+            <div className="relative w-screen h-screen overflow-hidden bg-transparent select-none">
                 {/* Background Layer */}
                 <DurinsGate />
                 <ElvenFrame />
