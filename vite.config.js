@@ -9,6 +9,7 @@ export default defineConfig({
         viteSingleFile(),
         {
             name: 'html-transform',
+            apply: 'build',
             transformIndexHtml(html) {
                 return html.replace(/type="module"/g, '').replace(/crossorigin/g, '');
             }
