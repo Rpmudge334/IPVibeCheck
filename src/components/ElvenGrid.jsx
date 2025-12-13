@@ -1,6 +1,7 @@
 import React, { useRef, useMemo, useState } from 'react';
 import { useWindowManager } from './WindowManager';
 import ElvenWidget from './ElvenWidget';
+import { ToolRegistry } from '../config/ToolRegistry';
 import { LayoutGrid, Loader, Activity } from 'lucide-react';
 
 export default function ElvenGrid() {
@@ -100,6 +101,27 @@ export default function ElvenGrid() {
         updateWindow(id, { customSize: newSize });
     };
 
+    const handleDragEnd = (id, info) => {
+        // Calculate new position based on delta
+        // We need the *current* layout position (start of drag)
+        const currentWin = windows.find(w => w.id === id);
+        if (!currentWin) return;
+
+        // Existing pos is either custom or from formation
+        // We can't easily access 'formations' inside this callback if we want to avoid stale closures,
+        // but 'formations' changes only on window count/resize.
+        // Let's trust 'formations[id]'.
+
+        const startPos = currentWin.customPosition || formations[id] || { x: 0, y: 0 };
+
+        const newPos = {
+            x: startPos.x + info.offset.x,
+            y: startPos.y + info.offset.y
+        };
+
+        updateWindow(id, { customPosition: newPos });
+    };
+
     return (
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
             {/* Layout Toggle Button */}
@@ -114,28 +136,33 @@ export default function ElvenGrid() {
             </div>
 
             {windows.map((win) => {
-                // If minimized, we place it off-screen or just hide it.
-                // But we MUST keep it rendered.
-                // If not minimized, get pos from formations.
-
                 const isMinimized = win.isMinimized;
 
-                // If minimized, use dummy pos. CSS will hide it.
-                // Or rather, we want it to animate to the bottom.
+                // 1. Calculate Base Position (Geometric or Grid)
                 let pos = formations[win.id] || { x: 0, y: 0, w: 300, h: 200 };
 
-                // Override with custom size if available
+                // 2. Override with Custom Position (Drag Persistence)
+                if (win.customPosition) {
+                    pos = { ...pos, x: win.customPosition.x, y: win.customPosition.y };
+                    // Note: We keep the W/H from formation/resize context unless we want to split them?
+                    // Currently resize saves to 'customSize'.
+                }
+
+                // 3. Override with Custom Size (Resize Persistence)
                 if (win.customSize) {
                     pos = { ...pos, ...win.customSize };
                 }
 
                 const isActive = win.id === activeWindowId;
 
+
+
+                // Resolve the component
+                // WindowManager now stores 'toolId' instead of 'component'
+                // Fallback to legacy 'component' prop if toolId is missing (backwards compat during potential hmr)
+                const ToolComponent = ToolRegistry[win.toolId]?.component || win.component;
+
                 return (
-                    // We remove the CSS transition and rely on ElvenWidget's internal layout prop or
-                    // we wrap it in a motion.div explicitly here for entrance/exit.
-                    // Actually, ElvenWidget handles `animate` props largely.
-                    // But to "suck" to dock, we need to override the position in the minimized state.
                     <div
                         key={win.id}
                         className={`pointer-events-auto absolute transition-none ${isMinimized ? 'pointer-events-none' : ''}`}
@@ -153,11 +180,12 @@ export default function ElvenGrid() {
                             onClose={closeWindow}
                             onMinimize={minimizeWindow}
                             onResize={handleResize}
+                            onDragEnd={handleDragEnd} // Add Drag Persistence
                             isDraggable={!isMinimized}
                             zIndex={isActive ? 50 : 10}
                             scale={scale}
                         >
-                            {win.component}
+                            {ToolComponent ? <ToolComponent /> : <div>Component Not Found</div>}
                         </ElvenWidget>
                     </div>
                 );

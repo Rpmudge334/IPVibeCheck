@@ -4,17 +4,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Shield, Hammer, Map, Eye, Key, Scroll, Search, Flame, Sword, Compass, MapPin, Hourglass } from 'lucide-react';
 import { useIsAuthenticated } from "@azure/msal-react";
 
-// Tool Imports
-const Notepad = React.lazy(() => import('./Notepad'));
-const SmeltingChamber = React.lazy(() => import('./SmeltingChamber'));
-const SubnetCalculator = React.lazy(() => import('./SubnetCalc'));
-const MacLookup = React.lazy(() => import('./MacLookup'));
-const PasswordGen = React.lazy(() => import('./PasswordGen'));
-const TicketScribe = React.lazy(() => import('./TicketScribe'));
-const NetworkScanner = React.lazy(() => import('./NetworkScanner'));
-const DnsIntel = React.lazy(() => import('./DnsIntel'));
-const EmailForensics = React.lazy(() => import('./EmailForensics'));
-const DomainAge = React.lazy(() => import('./DomainAge'));
+import { ToolRegistry, getToolsByCategory, TOOL_CATEGORIES } from '../config/ToolRegistry';
+
+
+// Tool Imports - REMOVED (Handled by Registry)
 
 const Palantir = ({ label, color, icon: Icon, tools, onClick, isActive, activeWindows }) => {
     return (
@@ -106,8 +99,8 @@ export default function ArtifactNav() {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    const handleLaunch = (id, component, title) => {
-        openWindow(id, component, title);
+    const handleLaunch = (id) => {
+        openWindow(id);
         setActiveOrb(null); // Auto-close menu
     };
 
@@ -115,24 +108,20 @@ export default function ArtifactNav() {
 
     if (!isAuthenticated) return null;
 
-    const utilityTools = [
-        { id: 'notepad', label: 'Notepad', icon: Scroll, onClick: () => handleLaunch('notepad', <Notepad />, 'Scratchpad') },
-        { id: 'ticket', label: 'Ticket Scribe', icon: Search, onClick: () => handleLaunch('ticket', <TicketScribe />, 'Ticket Scribe') },
-        { id: 'passgen', label: 'Password Gen', icon: Key, onClick: () => handleLaunch('passgen', <PasswordGen />, 'Password Forge') },
-        { id: 'mac', label: 'MAC Lookup', icon: Search, onClick: () => handleLaunch('mac', <MacLookup />, 'MAC Address Lookup') },
-    ];
+    const utilityTools = getToolsByCategory(TOOL_CATEGORIES.UTILITY).map(t => ({
+        ...t,
+        onClick: () => handleLaunch(t.id)
+    }));
 
-    const securityTools = [
-        { id: 'smelter', label: 'Log Analyzer', icon: Flame, onClick: () => handleLaunch('smelter', <SmeltingChamber />, 'Smelting Chamber') },
-        { id: 'scan', label: 'Target Scanner', icon: Sword, onClick: () => handleLaunch('scan', <NetworkScanner />, 'Vulnerability Scanner') },
-        { id: 'email', label: 'Email Tracer', icon: Eye, onClick: () => handleLaunch('email', <EmailForensics />, 'Header Visualizer') },
-    ];
+    const securityTools = getToolsByCategory(TOOL_CATEGORIES.SECURITY).map(t => ({
+        ...t,
+        onClick: () => handleLaunch(t.id)
+    }));
 
-    const networkTools = [
-        { id: 'subnet', label: 'Subnet Calc', icon: Compass, onClick: () => handleLaunch('subnet', <SubnetCalculator />, 'Subnet Calculator') },
-        { id: 'dns', label: 'DNS Intel', icon: MapPin, onClick: () => handleLaunch('dns', <DnsIntel />, 'DNS Intelligence') },
-        { id: 'age', label: 'Domain Age', icon: Hourglass, onClick: () => handleLaunch('age', <DomainAge />, 'Domain Age Recon') },
-    ];
+    const networkTools = getToolsByCategory(TOOL_CATEGORIES.NETWORK).map(t => ({
+        ...t,
+        onClick: () => handleLaunch(t.id)
+    }));
 
     return (
         <motion.div

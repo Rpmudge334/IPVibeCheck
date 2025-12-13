@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
+import { ToolRegistry } from '../config/ToolRegistry';
 
 const WindowContext = createContext();
 
@@ -9,8 +10,28 @@ export const useWindowManager = () => {
 };
 
 export const WindowProvider = ({ children }) => {
-    const [windows, setWindows] = useState([]);
+    // persistence: Load initial state from localStorage
+    const [windows, setWindows] = useState(() => {
+        try {
+            const saved = localStorage.getItem('mithril_state');
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                // Validate: Remove tools that no longer exist in registry
+                return parsed.filter(w => ToolRegistry[w.toolId]);
+            }
+        } catch (e) {
+            console.error("Failed to load state", e);
+        }
+        return [];
+    });
+
     const [activeWindowId, setActiveWindowId] = useState(null);
+
+    // persistence: Auto-save on change
+    React.useEffect(() => {
+        const data = JSON.stringify(windows);
+        localStorage.setItem('mithril_state', data);
+    }, [windows]);
 
     const focusWindow = useCallback((id) => {
         setActiveWindowId(id);
@@ -25,7 +46,7 @@ export const WindowProvider = ({ children }) => {
         setWindows(prev => prev.map(w => w.id === id ? { ...w, ...updates } : w));
     }, []);
 
-    const openWindow = useCallback((id, component, title = "Tool", initialProps = {}) => {
+    const openWindow = useCallback((toolId, initialProps = {}) => {
         setWindows(prev => {
             // Helper to strip customSize from a list of windows
             const resetSizes = (list) => list.map(w => {
@@ -33,14 +54,14 @@ export const WindowProvider = ({ children }) => {
                 return rest;
             });
 
-            const existing = prev.find(w => w.id === id);
+            const existing = prev.find(w => w.id === toolId);
 
             // 1. Existing Window: Restore if minimized, Focus (move to end)
             if (existing) {
                 // If it was minimized, we "un-minimize" it.
                 // We also move it to the end to ensure it's on top (focused).
                 // AND we reset sizes because the layout context changes.
-                const others = prev.filter(w => w.id !== id);
+                const others = prev.filter(w => w.id !== toolId);
                 // Strict removal of customSize from existing window
                 const { customSize, ...existingBase } = existing;
                 return [...resetSizes(others), { ...existingBase, isMinimized: false }];
@@ -64,17 +85,24 @@ export const WindowProvider = ({ children }) => {
 
             const gridPos = { x: 0, y: 0, w: 4, h: 4 }; // Placeholder
 
+            // Lookup Tool Metadata
+            const toolDef = ToolRegistry[toolId];
+            if (!toolDef) {
+                console.error(`Tool ID ${toolId} not found in registry`);
+                return currentWindows;
+            }
+
             return [...currentWindows, {
-                id,
-                component,
-                title,
+                id: toolId,
+                toolId: toolId, // Explicit tool ID for persistence
+                title: toolDef.title,
                 props: initialProps,
                 gridPos,
-                isMinimized: false // New Default
+                isMinimized: false
             }];
         });
         // Always set active ID
-        setActiveWindowId(id);
+        setActiveWindowId(toolId);
     }, []);
 
     const closeWindow = useCallback((id) => {
