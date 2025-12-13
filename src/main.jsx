@@ -3,24 +3,28 @@ import ReactDOM from 'react-dom/client'
 import App from './App.jsx'
 import './index.css'
 
-const mount = () => {
+import { PublicClientApplication } from '@azure/msal-browser';
+import { MsalProvider } from '@azure/msal-react';
+import { msalConfig } from './authConfig';
+
+const msalInstance = new PublicClientApplication(msalConfig);
+
+const mount = async () => {
     const root = document.getElementById('root');
     if (!root) {
         document.body.innerHTML += '<div style="color:red;z-index:99999;position:fixed;top:0">FATAL: ROOT NOT FOUND</div>';
         return;
     }
 
-    // Clear static checks
-    // document.getElementById('static-loading')?.remove();
-
     try {
+        await msalInstance.initialize();
         ReactDOM.createRoot(root).render(
             <React.StrictMode>
-                <App />
+                <MsalProvider instance={msalInstance}>
+                    <App />
+                </MsalProvider>
             </React.StrictMode>,
         );
-        // Visual confirmation for user
-        // document.body.insertAdjacentHTML('beforeend', '<div id="app-mounted" style="display:none">MOUNTED</div>');
     } catch (err) {
         document.body.innerHTML += `<div style="color:red;background:white;z-index:99999;position:fixed;top:50%">MOUNT ERROR: ${err.message}</div>`;
     }
