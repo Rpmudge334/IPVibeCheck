@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { X, Minus } from 'lucide-react';
+import { X, Minus, Scaling } from 'lucide-react';
 
 export default function ElvenWidget({
     id,
@@ -8,29 +8,73 @@ export default function ElvenWidget({
     children,
     onClose,
     onMinimize,
-    layoutPos = { x: 0, y: 0, w: 300, h: 200 }, // Now strictly pixel/percent based from parent
+    onResize, // New prop for committing size changes
+    layoutPos = { x: 0, y: 0, w: 300, h: 200 },
     isDraggable = true,
     onDragEnd,
     zIndex = 10,
     scale = 1
 }) {
+    // Local size state to handle smooth resizing without thrashing global layout
+    // We initialize with layoutPos dimensions
+    const [size, setSize] = useState({ w: layoutPos.w, h: layoutPos.h });
+    const isResizing = useRef(false);
+
+    // Sync local size when layoutPos changes (unless we are currently resizing)
+    useEffect(() => {
+        if (!isResizing.current) {
+            setSize({ w: layoutPos.w, h: layoutPos.h });
+        }
+    }, [layoutPos.w, layoutPos.h]);
+
+    const handleResizeStart = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        isResizing.current = true;
+
+        const startX = e.clientX;
+        const startY = e.clientY;
+        const startW = size.w;
+        const startH = size.h;
+
+        const handleMouseMove = (moveEvent) => {
+            const newW = Math.max(200, startW + (moveEvent.clientX - startX));
+            const newH = Math.max(150, startH + (moveEvent.clientY - startY));
+            setSize({ w: newW, h: newH });
+        };
+
+        const handleMouseUp = () => {
+            isResizing.current = false;
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('mouseup', handleMouseUp);
+            // Commit change
+            if (onResize) {
+                onResize(id, { w: size.w, h: size.h });
+            }
+        };
+
+        window.addEventListener('mousemove', handleMouseMove);
+        window.addEventListener('mouseup', handleMouseUp);
+    };
+
     return (
         <motion.div
-            layout // Magic Motion for reordering positions
+            layout={!isResizing.current} // Disable layout animation while resizing to avoid fighting
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{
                 opacity: 1,
                 scale: 1,
                 x: layoutPos.x,
                 y: layoutPos.y,
-                width: layoutPos.w,
-                height: layoutPos.h,
+                width: size.w, // Use local size
+                height: size.h, // Use local size
                 zIndex: zIndex
             }}
             exit={{ opacity: 0, scale: 0.8 }}
             transition={{ type: "spring", stiffness: 45, damping: 15 }}
-            style={{ position: 'absolute', zIndex }} // Redundant but safe
-            drag={isDraggable}
+            style={{ position: 'absolute', zIndex }}
+            drag={isDraggable && !isResizing.current} // Disable drag while resizing
+            dragMomentum={false}
             onDragEnd={(_, info) => onDragEnd && onDragEnd(id, info)}
             className="group relative backdrop-blur-md bg-slate-950/70 rounded-[2rem] shadow-[0_0_30px_rgba(0,0,0,0.5)] border-0"
         >
@@ -91,7 +135,7 @@ export default function ElvenWidget({
                     {/* Corner Filigree - Bottom Right */}
                     <path
                         d="M 100% 80% C 100% 90% 90% 100% 80% 100%"
-                        transform="translate(-20, -20)" // Manual adjust since 100% relative is tricky in paths without explicit size
+                        transform="translate(-20, -20)"
                         stroke="#5eead4"
                         strokeWidth="1"
                         fill="none"
@@ -135,6 +179,16 @@ export default function ElvenWidget({
                     {children}
                 </div>
             </div>
+
+            {/* Resize Handle */}
+            {onResize && (
+                <div
+                    onMouseDown={handleResizeStart}
+                    className="absolute bottom-1 right-1 w-8 h-8 flex items-center justify-center cursor-se-resize z-40 text-slate-600 hover:text-mithril-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                    <Scaling size={16} />
+                </div>
+            )}
         </motion.div>
     );
 }

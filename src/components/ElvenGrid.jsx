@@ -4,33 +4,35 @@ import ElvenWidget from './ElvenWidget';
 import { LayoutGrid, Loader, Activity } from 'lucide-react';
 
 export default function ElvenGrid() {
-    const { windows, closeWindow, focusWindow, activeWindowId } = useWindowManager();
+    const { windows, closeWindow, focusWindow, minimizeWindow, updateWindow, activeWindowId } = useWindowManager();
     const [layoutMode, setLayoutMode] = useState('geometric'); // 'geometric' | 'grid'
 
     // We assume a fixed container size for the dashboard area.
     const CONTAINER_W = window.innerWidth;
     const CONTAINER_H = window.innerHeight - 100; // Minus header
 
-    // Default Widget Size (Base)
-    const BASE_W = 400;
-    const BASE_H = 280;
+    // Default Widget Size (Base) - Upscaled for Desktop Feel
+    const BASE_W = 400; // Was 400, keeping base large
+    const BASE_H = 300; // Slightly taller
 
     // Dynamic Scaling Calculation
     // As count increases, we shrink the widgets slightly to fit more.
-    const scale = useMemo(() => {
-        const count = windows.length;
-        if (count <= 3) return 1;
-        if (count <= 5) return 0.9;
-        if (count <= 8) return 0.8;
-        return 0.7;
-    }, [windows.length]);
+    // Calculation based on VISIBLE windows only.
+    const visibleWindows = useMemo(() => windows.filter(w => !w.isMinimized), [windows]);
 
-    const W_W = 240;
-    const W_H = 240;
+    const scale = useMemo(() => {
+        const count = visibleWindows.length;
+        if (count <= 2) return 1.1; // Extra large for single tasking
+        if (count <= 4) return 1.0; // Standard Size
+        return 0.9; // Should not happen with hard cap of 4, but safe fallback
+    }, [visibleWindows.length]);
+
+    const W_W = 320; // Upscaled Base Width
+    const W_H = 280; // Upscaled Base Height
 
     // The Formulation Logic
     const formations = useMemo(() => {
-        const count = windows.length;
+        const count = visibleWindows.length;
         if (count === 0) return {};
 
         const positions = {};
@@ -46,7 +48,7 @@ export default function ElvenGrid() {
             const COLS = Math.floor(CONTAINER_W / (W_W + 20));
             const START_X = 50;
             const START_Y = 50;
-            windows.forEach((w, i) => {
+            visibleWindows.forEach((w, i) => {
                 const col = i % COLS;
                 const row = Math.floor(i / COLS);
                 const x = START_X + col * (W_W + 20) + W_W / 2;
@@ -57,27 +59,15 @@ export default function ElvenGrid() {
             // Geometric Layout (Collision-Free Centered Rows)
             let rows = [];
 
-            // Refined "Pyramid" Stacks for clear visibility
             if (count === 1) rows = [1];
-            else if (count === 2) rows = [2];
+            else if (count === 2) rows = [2]; // Side by side
             else if (count === 3) rows = [1, 2]; // Triangle
             else if (count === 4) rows = [2, 2]; // Square
-            else if (count === 5) rows = [1, 2, 2]; // Tall Pyramid (prevents horizontal crowding)
-            else if (count === 6) rows = [2, 2, 2]; // Tower (safer than 3,3 on narrow screens)
-            else if (count === 7) rows = [2, 3, 2]; // Hexagon-ish
-            else if (count === 8) rows = [2, 2, 2, 2]; // Tall Tower
-            else if (count === 9) rows = [3, 3, 3]; // Box
-            else {
-                // Generative fallback: Max 3 per row
-                const fullRows = Math.floor(count / 3);
-                const remainder = count % 3;
-                rows = Array(fullRows).fill(3);
-                if (remainder) rows.push(remainder);
-            }
+            // Capped at 4, so no need for 5+ cases
 
             // Calculate total height to center vertically
-            const GAP_Y = 20 * scale;
-            const GAP_X = 20 * scale;
+            const GAP_Y = 30 * scale;
+            const GAP_X = 30 * scale;
             const totalH = rows.length * W_H + (rows.length - 1) * GAP_Y;
             let startY = CY - totalH / 2 + W_H / 2;
 
@@ -89,7 +79,7 @@ export default function ElvenGrid() {
 
                 for (let i = 0; i < rowCount; i++) {
                     if (windowIdx < count) {
-                        set(windows[windowIdx].id, startX + i * (W_W + GAP_X), startY);
+                        set(visibleWindows[windowIdx].id, startX + i * (W_W + GAP_X), startY);
                         windowIdx++;
                     }
                 }
@@ -97,7 +87,11 @@ export default function ElvenGrid() {
             });
         }
         return positions;
-    }, [windows.length, CONTAINER_W, CONTAINER_H, scale, layoutMode]);
+    }, [visibleWindows, CONTAINER_W, CONTAINER_H, scale, layoutMode]);
+
+    const handleResize = (id, newSize) => {
+        updateWindow(id, { customSize: newSize });
+    };
 
     return (
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -113,13 +107,27 @@ export default function ElvenGrid() {
             </div>
 
             {windows.map((win) => {
-                const pos = formations[win.id] || { x: 0, y: 0, w: 300, h: 200 };
+                // If minimized, we place it off-screen or just hide it.
+                // But we MUST keep it rendered.
+                // If not minimized, get pos from formations.
+
+                const isMinimized = win.isMinimized;
+
+                // Base position from layout
+                let pos = formations[win.id] || { x: 0, y: 0, w: 300, h: 200 };
+
+                // Override with custom size if available
+                if (win.customSize) {
+                    pos = { ...pos, ...win.customSize };
+                }
+
                 const isActive = win.id === activeWindowId;
 
                 return (
                     <div
                         key={win.id}
-                        className="pointer-events-auto"
+                        className={`pointer-events-auto transition-opacity duration-300 ${isMinimized ? 'opacity-0 pointer-events-none absolute' : 'opacity-100'}`}
+                        style={isMinimized ? { transform: 'scale(0)' } : {}} // Shrink away
                         onMouseDown={() => focusWindow(win.id)} // Bring to front on click
                     >
                         <ElvenWidget
@@ -127,13 +135,11 @@ export default function ElvenGrid() {
                             title={win.title}
                             layoutPos={pos}
                             onClose={closeWindow}
-                            onMinimize={closeWindow} // "Minimize to Dock" = Close for now
-                            // We disable manual dragging "updating the source of truth" for the auto-layout
-                            // because strict auto-layout fights manual override.
-                            // But we allow visual dragging via isDraggable (Framer motion handles local delta)
+                            onMinimize={minimizeWindow}
+                            onResize={handleResize}
                             isDraggable={true}
-                            zIndex={isActive ? 50 : 10} // Explicit Z-Index
-                            scale={scale} // Pass scale for internal font adjustments
+                            zIndex={isActive ? 50 : 10}
+                            scale={scale}
                         >
                             {win.component}
                         </ElvenWidget>

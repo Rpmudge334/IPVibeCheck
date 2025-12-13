@@ -16,7 +16,7 @@ const DnsIntel = React.lazy(() => import('./DnsIntel'));
 const EmailForensics = React.lazy(() => import('./EmailForensics'));
 const DomainAge = React.lazy(() => import('./DomainAge'));
 
-const Palantir = ({ label, color, icon: Icon, tools, onClick, isActive }) => {
+const Palantir = ({ label, color, icon: Icon, tools, onClick, isActive, activeWindows }) => {
     return (
         <div className="relative flex flex-col items-center group">
             {/* The Orb */}
@@ -53,23 +53,35 @@ const Palantir = ({ label, color, icon: Icon, tools, onClick, isActive }) => {
                         animate={{ opacity: 1, y: -20, scale: 1 }}
                         exit={{ opacity: 0, y: 20, scale: 0.8 }}
                     >
-                        {tools.map((tool, i) => (
-                            <motion.button
-                                key={i}
-                                data-testid={`tool-${tool.label.toLowerCase().replace(/\s+/g, '-')}`}
-                                initial={{ opacity: 0, x: -20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                transition={{ delay: i * 0.05 }}
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    tool.onClick();
-                                }}
-                                className="flex items-center gap-3 px-4 py-2 bg-slate-900/80 backdrop-blur-md border border-white/10 rounded-md hover:bg-white/10 text-slate-300 hover:text-white hover:border-mithril-400/50 transition-all text-sm font-medium"
-                            >
-                                <tool.icon size={14} className="text-mithril-400" />
-                                {tool.label}
-                            </motion.button>
-                        ))}
+                        {tools.map((tool, i) => {
+                            const isRunning = activeWindows.some(w => w.id === tool.id && !w.isMinimized);
+                            const isMinimized = activeWindows.some(w => w.id === tool.id && w.isMinimized);
+
+                            return (
+                                <motion.button
+                                    key={i}
+                                    data-testid={`tool-${tool.label.toLowerCase().replace(/\s+/g, '-')}`}
+                                    initial={{ opacity: 0, x: -20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ delay: i * 0.05 }}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        tool.onClick();
+                                    }}
+                                    className="relative flex items-center justify-between px-4 py-2 bg-slate-900/80 backdrop-blur-md border border-white/10 rounded-md hover:bg-white/10 text-slate-300 hover:text-white hover:border-mithril-400/50 transition-all text-sm font-medium group/btn"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <tool.icon size={14} className="text-mithril-400" />
+                                        {tool.label}
+                                    </div>
+
+                                    {/* Active Indicator */}
+                                    {(isRunning || isMinimized) && (
+                                        <div className={`w-2 h-2 rounded-full shadow-[0_0_8px_currentColor] transition-colors ${isRunning ? 'bg-emerald-400 text-emerald-400' : 'bg-amber-400 text-amber-400'}`} />
+                                    )}
+                                </motion.button>
+                            );
+                        })}
                     </motion.div>
                 )}
             </AnimatePresence>
@@ -78,7 +90,7 @@ const Palantir = ({ label, color, icon: Icon, tools, onClick, isActive }) => {
 };
 
 export default function ArtifactNav() {
-    const { openWindow } = useWindowManager();
+    const { openWindow, windows } = useWindowManager();
     const isAuthenticated = useIsAuthenticated();
     const [activeOrb, setActiveOrb] = useState(null);
     const containerRef = React.useRef(null);
@@ -104,22 +116,22 @@ export default function ArtifactNav() {
     if (!isAuthenticated) return null;
 
     const utilityTools = [
-        { label: 'Notepad', icon: Scroll, onClick: () => handleLaunch('notepad', <Notepad />, 'Scratchpad') },
-        { label: 'Ticket Scribe', icon: Search, onClick: () => handleLaunch('ticket', <TicketScribe />, 'Ticket Scribe') },
-        { label: 'Password Gen', icon: Key, onClick: () => handleLaunch('passgen', <PasswordGen />, 'Password Forge') },
-        { label: 'MAC Lookup', icon: Search, onClick: () => handleLaunch('mac', <MacLookup />, 'MAC Address Lookup') },
+        { id: 'notepad', label: 'Notepad', icon: Scroll, onClick: () => handleLaunch('notepad', <Notepad />, 'Scratchpad') },
+        { id: 'ticket', label: 'Ticket Scribe', icon: Search, onClick: () => handleLaunch('ticket', <TicketScribe />, 'Ticket Scribe') },
+        { id: 'passgen', label: 'Password Gen', icon: Key, onClick: () => handleLaunch('passgen', <PasswordGen />, 'Password Forge') },
+        { id: 'mac', label: 'MAC Lookup', icon: Search, onClick: () => handleLaunch('mac', <MacLookup />, 'MAC Address Lookup') },
     ];
 
     const securityTools = [
-        { label: 'Log Analyzer', icon: Flame, onClick: () => handleLaunch('smelter', <SmeltingChamber />, 'Smelting Chamber') },
-        { label: 'Target Scanner', icon: Sword, onClick: () => handleLaunch('scan', <NetworkScanner />, 'Vulnerability Scanner') },
-        { label: 'Email Tracer', icon: Eye, onClick: () => handleLaunch('email', <EmailForensics />, 'Header Visualizer') },
+        { id: 'smelter', label: 'Log Analyzer', icon: Flame, onClick: () => handleLaunch('smelter', <SmeltingChamber />, 'Smelting Chamber') },
+        { id: 'scan', label: 'Target Scanner', icon: Sword, onClick: () => handleLaunch('scan', <NetworkScanner />, 'Vulnerability Scanner') },
+        { id: 'email', label: 'Email Tracer', icon: Eye, onClick: () => handleLaunch('email', <EmailForensics />, 'Header Visualizer') },
     ];
 
     const networkTools = [
-        { label: 'Subnet Calc', icon: Compass, onClick: () => handleLaunch('subnet', <SubnetCalculator />, 'Subnet Calculator') },
-        { label: 'DNS Intel', icon: MapPin, onClick: () => handleLaunch('dns', <DnsIntel />, 'DNS Intelligence') },
-        { label: 'Domain Age', icon: Hourglass, onClick: () => handleLaunch('age', <DomainAge />, 'Domain Age Recon') },
+        { id: 'subnet', label: 'Subnet Calc', icon: Compass, onClick: () => handleLaunch('subnet', <SubnetCalculator />, 'Subnet Calculator') },
+        { id: 'dns', label: 'DNS Intel', icon: MapPin, onClick: () => handleLaunch('dns', <DnsIntel />, 'DNS Intelligence') },
+        { id: 'age', label: 'Domain Age', icon: Hourglass, onClick: () => handleLaunch('age', <DomainAge />, 'Domain Age Recon') },
     ];
 
     return (
@@ -138,6 +150,7 @@ export default function ArtifactNav() {
                     tools={utilityTools}
                     isActive={activeOrb === 'utility'}
                     onClick={() => toggleOrb('utility')}
+                    activeWindows={windows}
                 />
                 <Palantir
                     label="Security"
@@ -146,6 +159,7 @@ export default function ArtifactNav() {
                     tools={securityTools}
                     isActive={activeOrb === 'security'}
                     onClick={() => toggleOrb('security')}
+                    activeWindows={windows}
                 />
                 <Palantir
                     label="Network"
@@ -154,6 +168,7 @@ export default function ArtifactNav() {
                     tools={networkTools}
                     isActive={activeOrb === 'network'}
                     onClick={() => toggleOrb('network')}
+                    activeWindows={windows}
                 />
             </div>
         </motion.div>
