@@ -78,21 +78,20 @@ const generateFromTemplate = (template) => {
     return generated;
 };
 
-export default function PasswordGen({ initialLength }) {
+export default function PasswordGen({ initialLength, initialTemplate }) {
     const [template, setTemplate] = useState("Wwww wwww wwww wwww*");
     const [history, setHistory] = useState([]);
 
     React.useEffect(() => {
         if (initialLength) {
-            // Create a template of '?' repeated initialLength times
             const t = Array(initialLength).fill('?').join('');
             setTemplate(t);
-            // We can't immediately call generateFromTemplate here easily without moving the function or duplicating.
-            // But wait, the function is outside the component. Easy.
-            const newPwd = generateFromTemplate(t);
-            setHistory([newPwd]);
+            setHistory([generateFromTemplate(t)]);
+        } else if (initialTemplate) {
+            setTemplate(initialTemplate);
+            setHistory([generateFromTemplate(initialTemplate)]);
         }
-    }, [initialLength]);
+    }, [initialLength, initialTemplate]);
 
     const handleGenerate = () => {
         const newPwd = generateFromTemplate(template);

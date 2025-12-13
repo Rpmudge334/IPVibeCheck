@@ -2,14 +2,22 @@ import React, { useState } from 'react';
 import { Network, Wifi, Server, List } from 'lucide-react';
 import InfoItem from './shared/InfoItem';
 
-const SubnetCalc = () => {
-    const [input, setInput] = useState('');
+const SubnetCalc = ({ initialNetwork }) => {
+    const [input, setInput] = useState(initialNetwork || '');
     const [result, setResult] = useState(null);
 
-    const calculate = (e) => {
-        e.preventDefault();
+    // Auto-calc
+    React.useEffect(() => {
+        if (initialNetwork) {
+            calculate(null, initialNetwork);
+        }
+    }, [initialNetwork]);
+
+    const calculate = (e, explicitInput = null) => {
+        if (e) e.preventDefault();
+        const target = explicitInput || input;
         try {
-            const [ip, mask] = input.split('/');
+            const [ip, mask] = target.split('/');
             const octets = ip.split('.').map(Number);
             const maskBits = parseInt(mask, 10);
 

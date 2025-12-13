@@ -2,8 +2,20 @@ import React, { useState } from 'react';
 import { Book, FileText, ChevronRight, Gavel } from 'lucide-react';
 import { HELP_DOCS } from '../config/HelpDocs';
 
-export default function HelpViewer() {
+export default function HelpViewer({ initialTopic }) {
     const [activeDocId, setActiveDocId] = useState(HELP_DOCS[0].id);
+
+    // Auto-navigate if topic provided
+    React.useEffect(() => {
+        if (initialTopic) {
+            const q = initialTopic.toLowerCase();
+            const match = HELP_DOCS.find(d =>
+                d.id.toLowerCase() === q ||
+                d.title.toLowerCase().includes(q)
+            );
+            if (match) setActiveDocId(match.id);
+        }
+    }, [initialTopic]);
 
     const activeDoc = HELP_DOCS.find(d => d.id === activeDocId);
 
@@ -20,8 +32,8 @@ export default function HelpViewer() {
                             key={doc.id}
                             onClick={() => setActiveDocId(doc.id)}
                             className={`w-full flex items-center gap-2 px-3 py-2 text-xs text-left rounded-md transition-colors ${activeDocId === doc.id
-                                    ? 'bg-mithril-600/30 text-white shadow-sm'
-                                    : 'hover:bg-white/5 text-slate-400'
+                                ? 'bg-mithril-600/30 text-white shadow-sm'
+                                : 'hover:bg-white/5 text-slate-400'
                                 }`}
                         >
                             {doc.id === 'license' ? <Gavel size={14} className={activeDocId === doc.id ? 'text-red-400' : 'text-slate-600'} /> : <FileText size={14} className={activeDocId === doc.id ? 'text-mithril-400' : 'text-slate-600'} />}

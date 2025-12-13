@@ -2,8 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useWindowManager } from './WindowManager';
 
-export default function Notepad() {
+export default function Notepad({ initialContent }) {
     const [text, setText] = useState(() => localStorage.getItem('mithril-notepad') || '');
+
+    // Append CLI note
+    React.useEffect(() => {
+        if (initialContent) {
+            setText(prev => {
+                const clean = prev.trim();
+                return clean ? `${clean}\n\n[CLI Note]: ${initialContent}` : `[CLI Note]: ${initialContent}`;
+            });
+        }
+    }, [initialContent]);
 
     useEffect(() => {
         localStorage.setItem('mithril-notepad', text);

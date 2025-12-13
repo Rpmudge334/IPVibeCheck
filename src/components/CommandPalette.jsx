@@ -89,16 +89,27 @@ export default function CommandPalette() {
                     action: () => openWindow('ticket', { initialTitle: arg })
                 });
             }
-            // PASS <LENGTH>
+            // PASS <LENGTH/TEMPLATE>
             if (['pass', 'gen', 'secret'].includes(cmd)) {
-                const len = parseInt(arg);
-                results.unshift({
-                    type: 'action',
-                    label: `Generate Password (${arg} chars)`,
-                    subLabel: `Launch Password Gen with length ${arg}`,
-                    icon: Search, // Key icon ideal
-                    action: () => openWindow('passgen', { initialLength: len || 16 })
-                });
+                const isNum = /^\d+$/.test(arg); // strictly digits
+                if (isNum) {
+                    const len = parseInt(arg, 10);
+                    results.unshift({
+                        type: 'action',
+                        label: `Generate Password (${arg} chars)`,
+                        subLabel: `Launch Password Gen with length ${arg}`,
+                        icon: Search,
+                        action: () => openWindow('passgen', { initialLength: len })
+                    });
+                } else {
+                    results.unshift({
+                        type: 'action',
+                        label: `Generate: ${arg}`,
+                        subLabel: `Launch Password Gen with template "${arg}"`,
+                        icon: Search,
+                        action: () => openWindow('passgen', { initialTemplate: arg })
+                    });
+                }
             }
             // AGE <DOMAIN>
             if (['age', 'old', 'whois'].includes(cmd)) {
@@ -108,6 +119,61 @@ export default function CommandPalette() {
                     subLabel: `Launch Domain Age for ${arg}`,
                     icon: Search,
                     action: () => openWindow('age', { initialDomain: arg })
+                });
+            }
+
+            // HELP <TOPIC>
+            if (['help', 'man', 'docs', 'info'].includes(cmd)) {
+                results.unshift({
+                    type: 'action',
+                    label: `Read Docs: ${arg}`,
+                    subLabel: `Open Manual for "${arg}"`,
+                    icon: Command, // Book icon if available
+                    action: () => openWindow('help', { initialTopic: arg })
+                });
+            }
+
+            // CALC <CIDR>
+            if (['calc', 'subnet', 'cidr', 'ip'].includes(cmd)) {
+                results.unshift({
+                    type: 'action',
+                    label: `Calculate: ${arg}`,
+                    subLabel: `Subnet Analysis for ${arg}`,
+                    icon: Command,
+                    action: () => openWindow('calc', { initialNetwork: arg })
+                });
+            }
+
+            // NOTE <TEXT>
+            if (['note', 'write', 'text'].includes(cmd)) {
+                results.unshift({
+                    type: 'action',
+                    label: `Jot Down: "${arg}"`,
+                    subLabel: `Create Note with content`,
+                    icon: Command,
+                    action: () => openWindow('note', { initialContent: arg })
+                });
+            }
+
+            // LOG <TEXT>
+            if (['log', 'syslog', 'analyze'].includes(cmd)) {
+                results.unshift({
+                    type: 'action',
+                    label: `Analyze Log: "${arg}"`,
+                    subLabel: `Send text to Log Analyzer`,
+                    icon: Command,
+                    action: () => openWindow('log', { initialLog: arg })
+                });
+            }
+
+            // BUILD <SEARCH>
+            if (['build', 'cmd', 'ps1', 'construct'].includes(cmd)) {
+                results.unshift({
+                    type: 'action',
+                    label: `Build Command: "${arg}"`,
+                    subLabel: `Open Command Builder with search "${arg}"`,
+                    icon: Command, // Terminal icon
+                    action: () => openWindow('build', { initialSearch: arg })
                 });
             }
         }
@@ -307,18 +373,18 @@ export default function CommandPalette() {
                                                             <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-2">Description</h4>
                                                             <p className="text-sm text-slate-300 leading-relaxed">
                                                                 {isApp ? (
-                                                                    `Launch the ${data.title} module directly. You can use any of the aliases to find this quickly.`
+                                                                    data.description || `Launch the ${data.title} module directly. You can use any of the aliases to find this quickly.`
                                                                 ) : (
                                                                     `Execute this action immediately with the provided parameters.`
                                                                 )}
                                                             </p>
                                                         </div>
 
-                                                        {isApp && data.commands && (
+                                                        {(data.usage || data.commands) && (
                                                             <div>
                                                                 <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-2">Example Usage</h4>
                                                                 <div className="bg-black/40 rounded-lg p-3 text-xs font-mono text-slate-400 border border-white/5">
-                                                                    <span className="text-mithril-400">{data.commands[0]}</span> <span className="text-slate-600">[arg]</span>
+                                                                    <span className="text-mithril-400">$</span> {data.usage || (data.commands && `${data.commands[0]} [arg]`)}
                                                                 </div>
                                                             </div>
                                                         )}

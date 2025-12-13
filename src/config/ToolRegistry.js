@@ -1,5 +1,9 @@
 import React from 'react';
-import { Shield, Hammer, Map, Eye, Key, Scroll, Search, Flame, Sword, Compass, MapPin, Hourglass } from 'lucide-react';
+import {
+    Terminal, Search, Shield, Activity, FileText,
+    Globe, Database, Server, Key, Calculator,
+    Eye, Flame, Compass, Hourglass, Scroll, Sword, MapPin
+} from 'lucide-react';
 
 // Lazy Load Components
 const Notepad = React.lazy(() => import('../components/Notepad'));
@@ -13,6 +17,7 @@ const DnsIntel = React.lazy(() => import('../components/DnsIntel'));
 const EmailForensics = React.lazy(() => import('../components/EmailForensics'));
 const DomainAge = React.lazy(() => import('../components/DomainAge'));
 const HelpViewer = React.lazy(() => import('../components/HelpViewer'));
+const CommandBuilder = React.lazy(() => import('../components/CommandBuilder'));
 
 export const TOOL_CATEGORIES = {
     UTILITY: 'utility',
@@ -24,11 +29,13 @@ export const ToolRegistry = {
     // Utility Tools
     help: {
         id: 'help',
-        label: 'Help & License',
-        title: 'Mithril Documentation',
-        icon: Scroll,
+        label: 'System Manual',
+        title: 'Help & Documentation',
+        icon: FileText, // Or HelpCircle if imported
         component: HelpViewer,
-        category: TOOL_CATEGORIES.UTILITY
+        category: TOOL_CATEGORIES.UTILITY,
+        commands: ['help', 'man', 'docs', 'info', 'faq'],
+        usage: 'help <topic>'
     },
     notepad: {
         id: 'notepad',
@@ -37,7 +44,8 @@ export const ToolRegistry = {
         icon: Scroll,
         component: Notepad,
         category: TOOL_CATEGORIES.UTILITY,
-        commands: ['note', 'write', 'text', 'scratch']
+        commands: ['note', 'write', 'text', 'scratch'],
+        usage: 'note <text>'
     },
     ticket: {
         id: 'ticket',
@@ -46,16 +54,19 @@ export const ToolRegistry = {
         icon: Search,
         component: TicketScribe,
         category: TOOL_CATEGORIES.UTILITY,
-        commands: ['ticket', 'scribe', 'report', 'issue']
+        commands: ['ticket', 'scribe', 'report', 'issue'],
+        usage: 'ticket <subject>'
     },
     passgen: {
         id: 'passgen',
         label: 'Password Gen',
         title: 'Password Forge',
+        description: 'Template-based generator. Tokens: Wwww/wwww (words), #### (digits), **** (specials), ???? (alphanum). Spaces and other chars are preserved.',
         icon: Key,
         component: PasswordGen,
         category: TOOL_CATEGORIES.UTILITY,
-        commands: ['pass', 'gen', 'secret', 'key']
+        commands: ['pass', 'gen', 'secret', 'key'],
+        usage: 'pass <length> OR <template>'
     },
     mac: {
         id: 'mac',
@@ -64,7 +75,8 @@ export const ToolRegistry = {
         icon: Search,
         component: MacLookup,
         category: TOOL_CATEGORIES.UTILITY,
-        commands: ['mac', 'oui', 'vendor']
+        commands: ['mac', 'oui', 'vendor'],
+        usage: 'mac <address>'
     },
 
     // Security Tools
@@ -75,7 +87,8 @@ export const ToolRegistry = {
         icon: Flame,
         component: SmeltingChamber,
         category: TOOL_CATEGORIES.SECURITY,
-        commands: ['log', 'syslog', 'analyze', 'smelt']
+        commands: ['log', 'syslog', 'analyze', 'smelt'],
+        usage: 'log <text>'
     },
     scan: {
         id: 'scan',
@@ -84,7 +97,8 @@ export const ToolRegistry = {
         icon: Sword,
         component: NetworkScanner,
         category: TOOL_CATEGORIES.SECURITY,
-        commands: ['scan', 'nmap', 'ping', 'recon']
+        commands: ['scan', 'nmap', 'ping', 'recon'],
+        usage: 'scan <ip/domain>'
     },
     email: {
         id: 'email',
@@ -93,7 +107,8 @@ export const ToolRegistry = {
         icon: Eye,
         component: EmailForensics,
         category: TOOL_CATEGORIES.SECURITY,
-        commands: ['email', 'header', 'trace', 'smtp']
+        commands: ['email', 'header', 'trace', 'smtp'],
+        usage: 'email <header_text>'
     },
 
     // Network Tools
@@ -104,7 +119,8 @@ export const ToolRegistry = {
         icon: Compass,
         component: SubnetCalculator,
         category: TOOL_CATEGORIES.NETWORK,
-        commands: ['calc', 'subnet', 'cidr', 'ip']
+        commands: ['calc', 'subnet', 'cidr', 'ip'],
+        usage: 'calc <cidr>'
     },
     dns: {
         id: 'dns',
@@ -113,7 +129,8 @@ export const ToolRegistry = {
         icon: MapPin,
         component: DnsIntel,
         category: TOOL_CATEGORIES.NETWORK,
-        commands: ['dns', 'dig', 'nslookup', 'whois']
+        commands: ['dns', 'dig', 'nslookup', 'whois'],
+        usage: 'dns <domain>'
     },
     age: {
         id: 'age',
@@ -122,7 +139,19 @@ export const ToolRegistry = {
         icon: Hourglass,
         component: DomainAge,
         category: TOOL_CATEGORIES.NETWORK,
-        commands: ['age', 'old', 'whois', 'created']
+        commands: ['age', 'old', 'whois', 'created'],
+        usage: 'age <domain>'
+    },
+    build: {
+        id: 'build',
+        label: 'Concept Builder',
+        title: 'Command Construction Kit',
+        description: 'Builder for complex PowerShell and CMD commands. Includes templates for AD, Network, and System tasks.',
+        icon: Terminal,
+        component: CommandBuilder,
+        category: TOOL_CATEGORIES.UTILITY,
+        commands: ['build', 'cmd', 'ps1', 'construct'],
+        usage: 'build <search>'
     },
 };
 
